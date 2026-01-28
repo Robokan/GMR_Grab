@@ -36,7 +36,7 @@ def check_memory(threshold_gb=30):  # adjust based on your available memory
 HERE = pathlib.Path(__file__).parent
 
 
-def process_file(smplx_file_path, tgt_file_path, tgt_robot, SMPLX_FOLDER, tgt_folder, total_files, verbose=False):
+def process_file(smplx_file_path, tgt_file_path, tgt_robot, SMPLX_FOLDER, tgt_folder, total_files, verbose=False, load_hands=False):
     def log_memory(message):
         if verbose:
             process = psutil.Process(os.getpid())
@@ -60,7 +60,7 @@ def process_file(smplx_file_path, tgt_file_path, tgt_robot, SMPLX_FOLDER, tgt_fo
             return
 
     try:
-        smplx_data, body_model, smplx_output, actual_human_height = load_smplx_file(smplx_file_path, SMPLX_FOLDER)
+        smplx_data, body_model, smplx_output, actual_human_height = load_smplx_file(smplx_file_path, SMPLX_FOLDER, load_hands=load_hands)
         mocap_frame_rate = smplx_data["mocap_frame_rate"]
         log_memory("After loading SMPL-X data")
     except Exception as e:
@@ -180,6 +180,8 @@ def main():
     
     parser.add_argument("--override", default=False, action="store_true")
     parser.add_argument("--num_cpus", default=4, type=int)
+    parser.add_argument("--load_hands", default=False, action="store_true",
+                        help="Load hand poses from SMPL-X files (for GRAB dataset)")
     args = parser.parse_args()
     
     # print the total number of cpus and gpus
@@ -239,7 +241,7 @@ def main():
     total_files = len(args_list)
     print(f"Total number of files to process: {total_files}")
     with mp.Pool(args.num_cpus) as pool:
-        pool.starmap(process_file, [args + (total_files, verbose) for args in args_list])
+        pool.starmap(process_file, [file_args + (total_files, verbose, args.load_hands) for file_args in args_list])
 
     print("Done. Saved to ", tgt_folder)
 

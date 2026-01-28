@@ -29,7 +29,7 @@ IK_CONFIG_DICT = {
     # offline data
     "smplx":{
         "unitree_g1": IK_CONFIG_ROOT / "smplx_to_g1.json",
-        "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1.json",
+        "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands.json",
         "unitree_h1": IK_CONFIG_ROOT / "smplx_to_h1.json",
         "unitree_h1_2": IK_CONFIG_ROOT / "smplx_to_h1_2.json",
         "booster_t1": IK_CONFIG_ROOT / "smplx_to_t1.json",
@@ -45,6 +45,22 @@ IK_CONFIG_DICT = {
         "pnd_adam_lite": IK_CONFIG_ROOT / "smplx_to_adam.json",
         "tienkung": IK_CONFIG_ROOT / "smplx_to_tienkung.json",
         "fourier_gr3": IK_CONFIG_ROOT / "smplx_to_gr3.json",
+    },
+    # SMPL-X with hands (for GRAB dataset and similar)
+    "smplx_hands":{
+        "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands.json",
+    },
+    # SMPL-X with hands - absolute positions (no scaling for wrists/hands)
+    # Use this for manipulation tasks where hand position must match exactly
+    "smplx_hands_absolute":{
+        "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands_absolute.json",
+    },
+    # GRAB dataset (uses same configs as smplx since it's SMPL-X format with hands)
+    "grab":{
+        "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands.json",
+    },
+    "grab_absolute":{
+        "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands_absolute.json",
     },
     "bvh_lafan1":{
         "unitree_g1": IK_CONFIG_ROOT / "bvh_lafan1_to_g1.json",

@@ -79,6 +79,35 @@ class GeneralMotionRetargeting:
         self.use_ik_match_table2 = ik_config["use_ik_match_table2"]
         self.human_scale_table = ik_config["human_scale_table"]
         self.ground = ik_config["ground_height"] * np.array([0, 0, 1])
+        
+        # Load finger joint mapping if available (for direct joint angle control)
+        self.use_finger_mapping = ik_config.get("use_finger_mapping", False)
+        self.finger_joint_mapping = {}
+        if self.use_finger_mapping and "finger_joint_mapping" in ik_config:
+            raw_mapping = ik_config["finger_joint_mapping"]
+            for human_joint, config in raw_mapping.items():
+                if human_joint.startswith("_"):  # Skip comments
+                    continue
+                robot_joint = config["robot_joint"]
+                # Find the joint id and get qpos address
+                joint_id = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, robot_joint)
+                if joint_id >= 0:
+                    # Get the qpos address for this joint
+                    qpos_idx = self.model.jnt_qposadr[joint_id]
+                    # Get joint limits
+                    lower = self.model.jnt_range[joint_id][0]
+                    upper = self.model.jnt_range[joint_id][1]
+                    self.finger_joint_mapping[human_joint] = {
+                        "robot_joint": robot_joint,
+                        "qpos_idx": qpos_idx,
+                        "smplx_axis": config["smplx_axis"],
+                        "scale": config["scale"],
+                        "offset": config["offset"],
+                        "lower": lower,
+                        "upper": upper,
+                    }
+            if verbose and self.finger_joint_mapping:
+                print(f"[GMR] Loaded {len(self.finger_joint_mapping)} finger joint mappings")
 
         self.max_iter = 10
 
@@ -103,6 +132,9 @@ class GeneralMotionRetargeting:
         self.setup_retarget_configuration()
         
         self.ground_offset = 0.0
+        
+        # Store raw human data for finger mapping (before scaling/offsetting)
+        self.raw_human_data = None
 
     def setup_retarget_configuration(self):
         self.configuration = mink.Configuration(self.model)
@@ -148,8 +180,11 @@ class GeneralMotionRetargeting:
 
   
     def update_targets(self, human_data, offset_to_ground=False):
-        # scale human data in local frame
+        # Store raw human data for finger mapping (before scaling)
         human_data = self.to_numpy(human_data)
+        self.raw_human_data = {k: (v[0].copy(), v[1].copy()) for k, v in human_data.items()}
+        
+        # scale human data in local frame
         human_data = self.scale_human_data(human_data, self.human_root_name, self.human_scale_table)
         human_data = self.offset_human_data(human_data, self.pos_offsets1, self.rot_offsets1)
         human_data = self.apply_ground_offset(human_data)
@@ -214,9 +249,47 @@ class GeneralMotionRetargeting:
                 
                 next_error = self.error2()
                 num_iter += 1
-                
+        
+        # Get the result from IK
+        qpos = self.configuration.data.qpos.copy()
+        
+        # Apply finger joint mapping if enabled (direct joint angle control)
+        if self.use_finger_mapping and self.raw_human_data is not None:
+            qpos = self.apply_finger_mapping(qpos)
             
-        return self.configuration.data.qpos.copy()
+        return qpos
+    
+    def apply_finger_mapping(self, qpos):
+        """Apply direct finger joint angle mapping from SMPL-X to robot joints.
+        
+        Extracts the rotation angle around a specified axis from the SMPL-X joint
+        quaternion and maps it directly to the robot finger joint.
+        """
+        for human_joint, mapping in self.finger_joint_mapping.items():
+            if human_joint not in self.raw_human_data:
+                continue
+                
+            # Get the SMPL-X joint quaternion (w, x, y, z format)
+            _, quat = self.raw_human_data[human_joint]
+            
+            # Convert to rotation and extract euler angles (xyz order)
+            # scipy uses (x, y, z, w) format
+            rot = R.from_quat([quat[1], quat[2], quat[3], quat[0]])
+            euler = rot.as_euler('xyz')  # radians
+            
+            # Extract the angle around the specified axis (0=x, 1=y, 2=z)
+            smplx_angle = euler[mapping["smplx_axis"]]
+            
+            # Apply scale and offset
+            robot_angle = smplx_angle * mapping["scale"] + mapping["offset"]
+            
+            # Clamp to joint limits
+            robot_angle = np.clip(robot_angle, mapping["lower"], mapping["upper"])
+            
+            # Set the joint angle
+            qpos[mapping["qpos_idx"]] = robot_angle
+            
+        return qpos
 
 
     def error1(self):
@@ -243,6 +316,7 @@ class GeneralMotionRetargeting:
     def scale_human_data(self, human_data, human_root_name, human_scale_table):
         
         human_data_local = {}
+        unscaled_bodies = {}
         root_pos, root_quat = human_data[human_root_name]
         
         # scale root
@@ -250,36 +324,47 @@ class GeneralMotionRetargeting:
         
         # scale other body parts in local frame
         for body_name in human_data.keys():
-            if body_name not in human_scale_table:
-                continue
             if body_name == human_root_name:
                 continue
+            elif body_name not in human_scale_table:
+                # Keep unscaled bodies (e.g., finger joints not in scale table)
+                # Transform to local frame relative to scaled root, with scale 1.0
+                unscaled_bodies[body_name] = (human_data[body_name][0] - root_pos, human_data[body_name][1])
             else:
-                # transform to local frame (only position)
+                # transform to local frame (only position) with scaling
                 human_data_local[body_name] = (human_data[body_name][0] - root_pos) * human_scale_table[body_name]
             
         # transform the human data back to the global frame
         human_data_global = {human_root_name: (scaled_root_pos, root_quat)}
         for body_name in human_data_local.keys():
             human_data_global[body_name] = (human_data_local[body_name] + scaled_root_pos, human_data[body_name][1])
+        
+        # Add unscaled bodies back (transformed relative to scaled root)
+        for body_name, (local_pos, quat) in unscaled_bodies.items():
+            human_data_global[body_name] = (local_pos + scaled_root_pos, quat)
 
         return human_data_global
     
     def offset_human_data(self, human_data, pos_offsets, rot_offsets):
-        """the pos offsets are applied in the local frame"""
+        """the pos offsets are applied in the local frame.
+        Only joints with defined offsets are transformed; others pass through unchanged."""
         offset_human_data = {}
         for body_name in human_data.keys():
             pos, quat = human_data[body_name]
-            offset_human_data[body_name] = [pos, quat]
-            # apply rotation offset first
-            updated_quat = (R.from_quat(quat, scalar_first=True) * rot_offsets[body_name]).as_quat(scalar_first=True)
-            offset_human_data[body_name][1] = updated_quat
             
-            local_offset = pos_offsets[body_name]
-            # compute the global position offset using the updated rotation
-            global_pos_offset = R.from_quat(updated_quat, scalar_first=True).apply(local_offset)
-            
-            offset_human_data[body_name][0] = pos + global_pos_offset
+            # Only apply offsets if this body has offsets defined in the config
+            if body_name in rot_offsets and body_name in pos_offsets:
+                # apply rotation offset first
+                updated_quat = (R.from_quat(quat, scalar_first=True) * rot_offsets[body_name]).as_quat(scalar_first=True)
+                
+                local_offset = pos_offsets[body_name]
+                # compute the global position offset using the updated rotation
+                global_pos_offset = R.from_quat(updated_quat, scalar_first=True).apply(local_offset)
+                
+                offset_human_data[body_name] = [pos + global_pos_offset, updated_quat]
+            else:
+                # Pass through unchanged for joints without offsets (e.g., finger joints)
+                offset_human_data[body_name] = [pos, quat]
            
         return offset_human_data
             

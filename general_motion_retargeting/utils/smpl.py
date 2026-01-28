@@ -11,7 +11,19 @@ def load_smpl_file(smpl_file):
     smpl_data = np.load(smpl_file, allow_pickle=True)
     return smpl_data
 
-def load_smplx_file(smplx_file, smplx_body_model_path):
+def load_smplx_file(smplx_file, smplx_body_model_path, load_hands=False):
+    """
+    Load SMPL-X file and create body model output.
+    
+    Args:
+        smplx_file: Path to the SMPL-X npz file (AMASS format with pose_body, root_orient, trans, betas)
+        smplx_body_model_path: Path to SMPL-X body model folder
+        load_hands: If True, load hand poses from file. 
+                    If False, use zero hand poses (default, for backward compatibility)
+    
+    Returns:
+        smplx_data, body_model, smplx_output, human_height
+    """
     smplx_data = np.load(smplx_file, allow_pickle=True)
     body_model = smplx.create(
         smplx_body_model_path,
@@ -25,13 +37,26 @@ def load_smplx_file(smplx_file, smplx_body_model_path):
     # print(smplx_data["trans"].shape)
     
     num_frames = smplx_data["pose_body"].shape[0]
+    
+    # Load hand poses if available and requested
+    if load_hands and "left_hand_pose" in smplx_data.keys():
+        left_hand_pose = torch.tensor(smplx_data["left_hand_pose"]).float()
+        right_hand_pose = torch.tensor(smplx_data["right_hand_pose"]).float()
+        # Handle case where hand pose might be stored differently
+        if left_hand_pose.dim() == 1:
+            left_hand_pose = left_hand_pose.unsqueeze(0).expand(num_frames, -1)
+            right_hand_pose = right_hand_pose.unsqueeze(0).expand(num_frames, -1)
+    else:
+        left_hand_pose = torch.zeros(num_frames, 45).float()
+        right_hand_pose = torch.zeros(num_frames, 45).float()
+    
     smplx_output = body_model(
         betas=torch.tensor(smplx_data["betas"]).float().view(1, -1), # (16,)
         global_orient=torch.tensor(smplx_data["root_orient"]).float(), # (N, 3)
         body_pose=torch.tensor(smplx_data["pose_body"]).float(), # (N, 63)
         transl=torch.tensor(smplx_data["trans"]).float(), # (N, 3)
-        left_hand_pose=torch.zeros(num_frames, 45).float(),
-        right_hand_pose=torch.zeros(num_frames, 45).float(),
+        left_hand_pose=left_hand_pose,
+        right_hand_pose=right_hand_pose,
         jaw_pose=torch.zeros(num_frames, 3).float(),
         leye_pose=torch.zeros(num_frames, 3).float(),
         reye_pose=torch.zeros(num_frames, 3).float(),
@@ -45,6 +70,80 @@ def load_smplx_file(smplx_file, smplx_body_model_path):
         human_height = 1.66 + 0.1 * smplx_data["betas"][0, 0]
     
     return smplx_data, body_model, smplx_output, human_height
+
+
+def load_grab_file(grab_file, smplx_body_model_path):
+    """
+    Load GRAB dataset file and create body model output with hand poses.
+    
+    GRAB files have a different structure than AMASS:
+    - body.params contains: transl, global_orient, body_pose, left_hand_pose (24 PCA), right_hand_pose (24 PCA)
+    - Hand poses use 24 PCA components (controlled by n_comps field)
+    
+    Args:
+        grab_file: Path to the GRAB npz file
+        smplx_body_model_path: Path to SMPL-X body model folder
+    
+    Returns:
+        grab_data_dict, body_model, smplx_output, human_height
+    """
+    grab_data = np.load(grab_file, allow_pickle=True)
+    
+    # Extract fields from GRAB format
+    gender = str(grab_data["gender"].item() if hasattr(grab_data["gender"], 'item') else grab_data["gender"])
+    n_comps = int(grab_data["n_comps"].item() if hasattr(grab_data["n_comps"], 'item') else grab_data["n_comps"])
+    framerate = float(grab_data["framerate"].item() if hasattr(grab_data["framerate"], 'item') else grab_data["framerate"])
+    
+    # Get body params
+    body = grab_data["body"].item()
+    params = body["params"]
+    
+    num_frames = params["body_pose"].shape[0]
+    
+    # Create body model with PCA hand poses
+    body_model = smplx.create(
+        smplx_body_model_path,
+        "smplx",
+        gender=gender,
+        use_pca=True,
+        num_pca_comps=n_comps,
+        flat_hand_mean=False,
+    )
+    
+    # Get hand poses (24 PCA components for GRAB)
+    left_hand_pose = torch.tensor(params["left_hand_pose"]).float()
+    right_hand_pose = torch.tensor(params["right_hand_pose"]).float()
+    
+    # Run forward pass
+    smplx_output = body_model(
+        global_orient=torch.tensor(params["global_orient"]).float(),
+        body_pose=torch.tensor(params["body_pose"]).float(),
+        transl=torch.tensor(params["transl"]).float(),
+        left_hand_pose=left_hand_pose,
+        right_hand_pose=right_hand_pose,
+        jaw_pose=torch.tensor(params.get("jaw_pose", np.zeros((num_frames, 3)))).float(),
+        leye_pose=torch.tensor(params.get("leye_pose", np.zeros((num_frames, 3)))).float(),
+        reye_pose=torch.tensor(params.get("reye_pose", np.zeros((num_frames, 3)))).float(),
+        expression=torch.tensor(params.get("expression", np.zeros((num_frames, 10)))).float(),
+        return_full_pose=True,
+    )
+    
+    # Estimate human height (GRAB doesn't have betas in same format)
+    # Use a default height - could be improved by looking at mesh vertices
+    human_height = 1.75
+    
+    # Create a dict that mimics AMASS format for compatibility
+    grab_data_dict = {
+        "pose_body": params["body_pose"],
+        "root_orient": params["global_orient"],
+        "trans": params["transl"],
+        "gender": gender,
+        "mocap_frame_rate": torch.tensor(framerate),
+        "left_hand_pose": params["left_hand_pose"],
+        "right_hand_pose": params["right_hand_pose"],
+    }
+    
+    return grab_data_dict, body_model, smplx_output, human_height
 
 
 def load_gvhmr_pred_file(gvhmr_pred_file, smplx_body_model_path):
