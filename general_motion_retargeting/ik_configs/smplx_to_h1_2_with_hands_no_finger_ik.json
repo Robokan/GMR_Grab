@@ -44,7 +44,9 @@
         "left_shoulder": 1.1,
         "right_shoulder": 1.1,
         "left_elbow": 1.1,
-        "right_elbow": 1.1
+        "right_elbow": 1.1,
+        "left_wrist": 1.0,
+        "right_wrist": 1.0
     },
 
     "ik_match_table1": {
