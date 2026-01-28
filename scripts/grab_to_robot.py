@@ -39,7 +39,7 @@ if __name__ == "__main__":
     
     parser.add_argument(
         "--robot",
-        choices=["unitree_g1", "unitree_g1_with_hands", "unitree_h1", "unitree_h1_2",
+        choices=["unitree_g1", "unitree_g1_with_hands", "unitree_h1", "unitree_h1_2", "unitree_h1_2_with_hands",
                  "booster_t1", "booster_t1_29dof","stanford_toddy", "fourier_n1", 
                 "engineai_pm01", "kuavo_s45", "hightorque_hi", "galaxea_r1pro", "berkeley_humanoid_lite", "booster_k1",
                 "pnd_adam_lite", "openloong", "tienkung", "fourier_gr3"],
@@ -142,6 +142,7 @@ if __name__ == "__main__":
         if save_dir:  # Only create directory if it's not empty
             os.makedirs(save_dir, exist_ok=True)
         qpos_list = []
+        target_positions_list = []  # Store target positions for each frame
     
     # Start the viewer
     i = 0
@@ -182,6 +183,11 @@ if __name__ == "__main__":
         )
         if args.save_path is not None:
             qpos_list.append(qpos)
+            # Save target positions (the IK targets from scaled human data)
+            frame_targets = {}
+            for body_name, (pos, rot) in retarget.scaled_human_data.items():
+                frame_targets[body_name] = (pos.copy(), rot.copy())
+            target_positions_list.append(frame_targets)
             
     if args.save_path is not None:
         import pickle
@@ -200,6 +206,7 @@ if __name__ == "__main__":
             "local_body_pos": local_body_pos,
             "link_body_list": body_names,
             "source_file": args.grab_file,
+            "target_positions": target_positions_list,  # IK target positions per frame
         }
         with open(args.save_path, "wb") as f:
             pickle.dump(motion_data, f)
