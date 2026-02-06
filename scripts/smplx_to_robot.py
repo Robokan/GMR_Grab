@@ -170,6 +170,11 @@ if __name__ == "__main__":
             "dof_pos": dof_pos,
             "local_body_pos": local_body_pos,
             "link_body_list": body_names,
+            # Scaling info for scene matching in SparkProtoMotions
+            "actual_human_height": retarget.actual_human_height,
+            "human_height_assumption": retarget.human_height_assumption,
+            "height_ratio": retarget.height_ratio,  # actual / assumed
+            "robot_type": args.robot,
         }
         with open(args.save_path, "wb") as f:
             pickle.dump(motion_data, f)

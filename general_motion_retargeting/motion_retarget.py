@@ -64,6 +64,11 @@ class GeneralMotionRetargeting:
             ratio = actual_human_height / ik_config["human_height_assumption"]
         else:
             ratio = 1.0
+        
+        # Store scaling info for later use (e.g., scene scaling in SparkProtoMotions)
+        self.actual_human_height = actual_human_height
+        self.human_height_assumption = ik_config["human_height_assumption"]
+        self.height_ratio = ratio
             
         # adjust the human scale table
         for key in ik_config["human_scale_table"].keys():

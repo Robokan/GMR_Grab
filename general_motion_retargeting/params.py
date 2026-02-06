@@ -21,6 +21,7 @@ ROBOT_XML_DICT = {
     "berkeley_humanoid_lite": ASSET_ROOT / "berkeley_humanoid_lite" / "bhl_scene.xml",
     "booster_k1": ASSET_ROOT / "booster_k1" / "K1_serial.xml",
     "pnd_adam_lite": ASSET_ROOT / "pnd_adam_lite" / "scene.xml",
+    "pnd_adam_inspire": pathlib.Path("/home/evaughan/sparkpack/pnd_models/adam_inspire/scene.xml"),
     "tienkung": ASSET_ROOT / "tienkung" / "mjcf" / "tienkung.xml",
     "pal_talos": ASSET_ROOT / "pal_talos" / "talos.xml",
     "fourier_gr3": ASSET_ROOT / "fourier_gr3v2_1_1" / "mjcf" / "gr3v2_1_1_dummy_hand.xml",
@@ -45,12 +46,14 @@ IK_CONFIG_DICT = {
         "berkeley_humanoid_lite": IK_CONFIG_ROOT / "smplx_to_bhl.json",
         "booster_k1": IK_CONFIG_ROOT / "smplx_to_k1.json",
         "pnd_adam_lite": IK_CONFIG_ROOT / "smplx_to_adam.json",
+        "pnd_adam_inspire": IK_CONFIG_ROOT / "smplx_to_adam_inspire.json",
         "tienkung": IK_CONFIG_ROOT / "smplx_to_tienkung.json",
         "fourier_gr3": IK_CONFIG_ROOT / "smplx_to_gr3.json",
     },
     # SMPL-X with hands (for GRAB dataset and similar)
     "smplx_hands":{
         "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands.json",
+        "pnd_adam_inspire": IK_CONFIG_ROOT / "smplx_to_adam_inspire.json",
     },
     # SMPL-X with hands - absolute positions (no scaling for wrists/hands)
     # Use this for manipulation tasks where hand position must match exactly
@@ -61,6 +64,7 @@ IK_CONFIG_DICT = {
     # No finger IK - just body retargeting for testing
     "smplx_no_finger_ik":{
         "unitree_h1_2_with_hands": IK_CONFIG_ROOT / "smplx_to_h1_2_with_hands_no_finger_ik.json",
+        "pnd_adam_inspire": IK_CONFIG_ROOT / "smplx_to_adam_inspire.json",
     },
     # GRAB dataset (uses same configs as smplx since it's SMPL-X format with hands)
     "grab":{
@@ -116,6 +120,7 @@ ROBOT_BASE_DICT = {
     "berkeley_humanoid_lite": "imu_2",
     "booster_k1": "Trunk",
     "pnd_adam_lite": "pelvis",
+    "pnd_adam_inspire": "pelvis",
     "tienkung": "Base_link",
     "pal_talos": "base_link",
     "fourier_gr3": "base_link",
@@ -138,6 +143,7 @@ VIEWER_CAM_DISTANCE_DICT = {
     "berkeley_humanoid_lite": 2.0,
     "booster_k1": 2.0,
     "pnd_adam_lite": 3.0,
+    "pnd_adam_inspire": 3.0,
     "tienkung": 3.0,
     "pal_talos": 3.0,
     "fourier_gr3": 2.0,

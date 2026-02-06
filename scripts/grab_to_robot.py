@@ -42,7 +42,7 @@ if __name__ == "__main__":
         choices=["unitree_g1", "unitree_g1_with_hands", "unitree_h1", "unitree_h1_2", "unitree_h1_2_with_hands",
                  "booster_t1", "booster_t1_29dof","stanford_toddy", "fourier_n1", 
                 "engineai_pm01", "kuavo_s45", "hightorque_hi", "galaxea_r1pro", "berkeley_humanoid_lite", "booster_k1",
-                "pnd_adam_lite", "openloong", "tienkung", "fourier_gr3"],
+                "pnd_adam_lite", "pnd_adam_inspire", "openloong", "tienkung", "fourier_gr3"],
         default="unitree_g1_with_hands",
     )
     
@@ -86,8 +86,18 @@ if __name__ == "__main__":
         action="store_true",
         help="Preserve absolute hand positions (no scaling for wrists). Use for manipulation tasks.",
     )
+    
+    parser.add_argument(
+        "--no_viewer",
+        default=False,
+        action="store_true",
+        help="Disable viewer (for batch processing). Requires --save_path.",
+    )
 
     args = parser.parse_args()
+    
+    if args.no_viewer and args.save_path is None:
+        parser.error("--no_viewer requires --save_path")
 
     # SMPL-X body models path
     if args.smplx_model_path:
@@ -124,12 +134,15 @@ if __name__ == "__main__":
         tgt_robot=args.robot,
     )
     
-    robot_motion_viewer = RobotMotionViewer(robot_type=args.robot,
-                                            motion_fps=aligned_fps,
-                                            transparent_robot=0,
-                                            record_video=args.record_video,
-                                            video_path=f"videos/{args.robot}_{pathlib.Path(args.grab_file).stem}.mp4",)
-    
+    # Initialize viewer only if not in no_viewer mode
+    robot_motion_viewer = None
+    if not args.no_viewer:
+        robot_motion_viewer = RobotMotionViewer(robot_type=args.robot,
+                                                motion_fps=aligned_fps,
+                                                transparent_robot=0,
+                                                record_video=args.record_video,
+                                                video_path=f"videos/{args.robot}_{pathlib.Path(args.grab_file).stem}.mp4",)
+
 
     curr_frame = 0
     # FPS measurement variables
@@ -155,14 +168,15 @@ if __name__ == "__main__":
             if i >= len(smplx_data_frames):
                 break
         
-        # FPS measurement
-        fps_counter += 1
-        current_time = time.time()
-        if current_time - fps_start_time >= fps_display_interval:
-            actual_fps = fps_counter / (current_time - fps_start_time)
-            print(f"Actual rendering FPS: {actual_fps:.2f}")
-            fps_counter = 0
-            fps_start_time = current_time
+        # FPS measurement (only when viewer is active)
+        if not args.no_viewer:
+            fps_counter += 1
+            current_time = time.time()
+            if current_time - fps_start_time >= fps_display_interval:
+                actual_fps = fps_counter / (current_time - fps_start_time)
+                print(f"Actual rendering FPS: {actual_fps:.2f}")
+                fps_counter = 0
+                fps_start_time = current_time
         
         # Update task targets.
         smplx_data = smplx_data_frames[i]
@@ -170,17 +184,18 @@ if __name__ == "__main__":
         # retarget
         qpos = retarget.retarget(smplx_data)
 
-        # visualize
-        robot_motion_viewer.step(
-            root_pos=qpos[:3],
-            root_rot=qpos[3:7],
-            dof_pos=qpos[7:],
-            human_motion_data=retarget.scaled_human_data,
-            human_pos_offset=np.array([0.0, 0.0, 0.0]),
-            show_human_body_name=False,
-            rate_limit=args.rate_limit,
-            follow_camera=False,
-        )
+        # visualize (only if viewer is active)
+        if robot_motion_viewer is not None:
+            robot_motion_viewer.step(
+                root_pos=qpos[:3],
+                root_rot=qpos[3:7],
+                dof_pos=qpos[7:],
+                human_motion_data=retarget.scaled_human_data,
+                human_pos_offset=np.array([0.0, 0.0, 0.0]),
+                show_human_body_name=False,
+                rate_limit=args.rate_limit,
+                follow_camera=False,
+            )
         if args.save_path is not None:
             qpos_list.append(qpos)
             # Save target positions (the IK targets from scaled human data)
@@ -207,11 +222,15 @@ if __name__ == "__main__":
             "link_body_list": body_names,
             "source_file": args.grab_file,
             "target_positions": target_positions_list,  # IK target positions per frame
+            # Scaling info for scene matching in SparkProtoMotions
+            "actual_human_height": retarget.actual_human_height,
+            "human_height_assumption": retarget.human_height_assumption,
+            "height_ratio": retarget.height_ratio,  # actual / assumed
+            "robot_type": args.robot,
         }
         with open(args.save_path, "wb") as f:
             pickle.dump(motion_data, f)
         print(f"[bold green]Saved to {args.save_path}[/bold green]")
             
-      
-    
-    robot_motion_viewer.close()
+    if robot_motion_viewer is not None:
+        robot_motion_viewer.close()
