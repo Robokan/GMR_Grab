@@ -628,4 +628,95 @@ else:
             print(f"  Created {joint_type} joint: {joint_name_key}")
 
         print(f"\nCreated {created_joints} physics joints.")
-        print("Done. Save the stage to preserve changes.")
+
+        # ---- Restructuring ----
+        # 1. Remove everything from the top level except lights, Armature, _materials, Camera, GroundPlane
+        # 2. Remove Skeleton, Cubes, MarkersHierarchy from inside Armature
+        # 3. Move everything in Armature into the root
+        # 4. Remove Armature
+
+        layer = stage.GetRootLayer()
+        old_root_path = root_path.GetParentPath()  # e.g., /root
+
+        KEEP_TOP_LEVEL = {"Armature", "_materials", "Camera", "GroundPlane"}
+        # Also keep anything that looks like a light
+        print("\n=== Restructuring ===")
+
+        # Step 1: Remove top-level prims we don't need (under /root)
+        removed_top = 0
+        for child in list(stage.GetPrimAtPath(old_root_path).GetChildren()):
+            name = child.GetName()
+            if name in KEEP_TOP_LEVEL:
+                continue
+            # Keep anything that contains a light anywhere inside it (or is a light itself)
+            LIGHT_TYPES = {"DiskLight", "DistantLight", "DomeLight", "RectLight", "SphereLight", "CylinderLight"}
+            has_light = any(c.GetTypeName() in LIGHT_TYPES for c in Usd.PrimRange(child))
+            if has_light:
+                print(f"  Keeping (has light): {name}")
+                continue
+            stage.RemovePrim(child.GetPath())
+            removed_top += 1
+            print(f"  Removed top-level: {name}")
+        print(f"  Step 1: Removed {removed_top} top-level prims")
+
+        # Step 2: Remove Skeleton, Cubes, MarkersHierarchy from inside Armature
+        REMOVE_FROM_ARMATURE = {"Cubes", "MarkersHierarchy"}
+        removed_arm = 0
+        for child in list(stage.GetPrimAtPath(root_path).GetChildren()):
+            name = child.GetName()
+            if name in REMOVE_FROM_ARMATURE or child.IsA(UsdSkel.Skeleton):
+                stage.RemovePrim(child.GetPath())
+                removed_arm += 1
+                print(f"  Removed from Armature: {name}")
+        print(f"  Step 2: Removed {removed_arm} prims from Armature")
+
+        # Step 3: Move everything in Armature into the root
+        moved = 0
+        for child_spec in list(layer.GetPrimAtPath(root_path).nameChildren):
+            name = child_spec.name
+            src = root_path.AppendChild(name)
+            dst = old_root_path.AppendChild(name)
+            # Skip if destination already exists (e.g., _materials)
+            if stage.GetPrimAtPath(dst):
+                print(f"  Skipping move (already exists at root): {name}")
+                continue
+            Sdf.CopySpec(layer, src, layer, dst)
+            moved += 1
+            print(f"  Moved to root: {name}")
+        print(f"  Step 3: Moved {moved} prims from Armature to root")
+
+        # Step 3b: Fix all relationship targets (joints, materials)
+        # Remap /root/Armature/X -> /root/X for all prims now under /root
+        armature_prefix = str(root_path) + "/"  # e.g., "/root/Armature/"
+        root_prefix = str(old_root_path) + "/"  # e.g., "/root/"
+        fixed_rels = 0
+        for prim in Usd.PrimRange(stage.GetPrimAtPath(old_root_path)):
+            # Skip prims still inside Armature (they'll be deleted)
+            prim_path_str = str(prim.GetPath())
+            if prim_path_str.startswith(armature_prefix) or prim_path_str == str(root_path):
+                continue
+            for rel in prim.GetRelationships():
+                targets = rel.GetTargets()
+                new_targets = []
+                changed = False
+                for target in targets:
+                    target_str = str(target)
+                    if target_str.startswith(armature_prefix):
+                        # /root/Armature/Hip -> /root/Hip
+                        remainder = target_str[len(armature_prefix):]
+                        new_target = root_prefix + remainder
+                        new_targets.append(Sdf.Path(new_target))
+                        changed = True
+                    else:
+                        new_targets.append(target)
+                if changed:
+                    rel.SetTargets(new_targets)
+                    fixed_rels += 1
+        print(f"  Step 3b: Fixed {fixed_rels} relationship targets")
+
+        # Step 4: Remove Armature
+        stage.RemovePrim(root_path)
+        print(f"  Step 4: Removed Armature")
+
+        print("=== Restructuring complete ===")
+        print("Save the stage (File > Save As) to preserve all changes.")
