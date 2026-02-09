@@ -21,9 +21,25 @@ import sys
 
 def run_in_docker(usd_path, output_dir, container_name, model_name, angle_unit, no_mesh_collision):
     """Run the conversion inside a Docker container that has pxr."""
+    # Convert host paths to container paths
+    # Host: /home/evaughan/sparkpack/... -> Container: /workspace/sparkpack/...
+    home_sparkpack = os.path.expanduser("~/sparkpack")
+    container_sparkpack = "/workspace/sparkpack"
+
+    def to_container_path(host_path):
+        if host_path and os.path.isabs(host_path):
+            abs_path = os.path.abspath(host_path)
+            if abs_path.startswith(home_sparkpack):
+                return container_sparkpack + abs_path[len(home_sparkpack):]
+        return host_path
+
     # Build the command to run inside the container
     script_path = os.path.abspath(os.path.join(
         os.path.dirname(__file__), '..', 'general_motion_retargeting', 'usd_to_mujoco.py'))
+    script_path = to_container_path(script_path)
+    usd_path = to_container_path(usd_path)
+    if output_dir:
+        output_dir = to_container_path(output_dir)
 
     # Find Isaac Sim python inside the container
     isaac_python = "/isaac-sim/kit/python/bin/python3.11"
