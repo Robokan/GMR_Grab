@@ -32,6 +32,13 @@ joint_info = {
     "Arm_7_R": {"from": "Arm4_R", "to": "Arm7_R", "revolute": {"axis": "Y"}, "drive": {"damping": 10, "stiffness": 100}},
     "Arm_8_R": {"from": "Arm7_R", "to": "Arm5_R", "revolute": {"axis": "X"}, "drive": {"damping": 10, "stiffness": 100}},
     "Arm_9_R": {"from": "Arm5_R", "to": "Arm6_R", "revolute": {"axis": "Z"}, "drive": {"damping": 10, "stiffness": 100}},
+    "Finguer1_R": {"from": "Hand1_R", "to": "Finguer1_R", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer2_R": {"from": "Finguer1_R", "to": "Finguer2_R", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer3_R": {"from": "Hand1_R", "to": "Finguer3_R", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer4_R": {"from": "Finguer3_R", "to": "Finguer4_R", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Hand_2_R": {"from": "Hand1_R", "to": "Hand2_R", "revolute": {"axis": "Y"}, "drive": {"damping": 1, "stiffness": 10}},
+    "Finguer5_R": {"from": "Hand2_R", "to": "Finguer5_R", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer6_R": {"from": "Finguer5_R", "to": "Finguer6_R", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
     "Hand_R": {"from": "Arm6_R", "to": "Hand1_R", "fixed": {}},
     "Leg_1_L": {"from": "Hip", "to": "Leg1_L", "revolute": {"axis": "Y"}, "rotate": {"X": 180}, "drive": {"damping": 10, "stiffness": 100}},
     "Leg_3_L": {"from": "Leg1_L", "to": "Leg2_L", "revolute": {"axis": "Z"}, "rotate": {"X": 180}, "drive": {"damping": 10, "stiffness": 100}},
@@ -58,7 +65,7 @@ joint_info = {
 }
 
 # List of regular expressions to filter joints (leaf names, lowercased)
-filter_patterns = [".*arm_[1,3,4,6,7,8,9]_[l,r].*", ".*hand.*_[l,r]", "head", "backbone", "twist", "neck_2","leg_.*", "foot.*"]
+filter_patterns = [".*arm_[1,3,4,6,7,8,9]_[l,r].*", ".*hand.*_[l,r]", "head", "backbone", "twist", "neck_2","leg_.*", "foot.*", ".*finguer.*_[l,r]"]
 
 # Xforms to completely remove from the stage (hydraulics and other non-essential
 # geometry near joints that can cause collider interference)
@@ -106,7 +113,10 @@ else:
 
     # Get joints and rest transforms
     joints = skel.GetJointsAttr().Get()
-    print(f"Skeleton has {len(joints)} joints")
+    print(f"Skeleton has {len(joints)} joints:")
+    for j in joints:
+        leaf = Sdf.Path(j).name
+        print(f"  {leaf}  ({j})")
 
     rest_xforms = skel.GetRestTransformsAttr().Get()
 
