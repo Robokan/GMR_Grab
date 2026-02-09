@@ -25,6 +25,13 @@ joint_info = {
     "Arm_8_L": {"from": "Arm7_L", "to": "Arm5_L", "revolute": {"axis": "X"}, "drive": {"damping": 10, "stiffness": 100}},
     "Arm_9_L": {"from": "Arm5_L", "to": "Arm6_L", "revolute": {"axis": "Z"}, "rotate": {"X": 180}, "drive": {"damping": 10, "stiffness": 100}},
     "Hand_L": {"from": "Arm6_L", "to": "Hand1_L", "fixed": {}},
+    "Finguer1_L": {"from": "Hand1_L", "to": "Finguer1_L", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer2_L": {"from": "Finguer1_L", "to": "Finguer2_L", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer3_L": {"from": "Hand1_L", "to": "Finguer3_L", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer4_L": {"from": "Finguer3_L", "to": "Finguer4_L", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Hand_2_L": {"from": "Hand1_L", "to": "Hand2_L", "revolute": {"axis": "Y"}, "drive": {"damping": 1, "stiffness": 10}},
+    "Finguer5_L": {"from": "Hand2_L", "to": "Finguer5_L", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
+    "Finguer6_L": {"from": "Finguer5_L", "to": "Finguer6_L", "revolute": {"axis": "X"}, "drive": {"damping": 1, "stiffness": 10}, "limits": {"low": -90, "high": 0}},
     "Arm_1_R": {"from": "Chest", "to": "Arm1_R", "revolute": {"axis": "Y"}, "drive": {"damping": 10, "stiffness": 100}},
     "Arm_3_R": {"from": "Arm1_R", "to": "Arm2_R", "revolute": {"axis": "Z"}, "drive": {"damping": 10, "stiffness": 100}},
     "Arm_4_R": {"from": "Arm2_R", "to": "Arm3_R", "revolute": {"axis": "Y"}, "drive": {"damping": 10, "stiffness": 100}},
@@ -628,11 +635,10 @@ else:
                 drive.CreateTypeAttr("force")
                 drive.CreateDampingAttr(float(drive_cfg.get("damping", 10)))
                 drive.CreateStiffnessAttr(float(drive_cfg.get("stiffness", 100)))
-                # Joint limits for revolute
+                # Joint limits for revolute (built-in attributes on RevoluteJoint)
                 if "limits" in info:
-                    limit_api = UsdPhysics.LimitAPI.Apply(joint_prim.GetPrim(), "angular")
-                    limit_api.CreateLowAttr().Set(float(info["limits"]["low"]))
-                    limit_api.CreateHighAttr().Set(float(info["limits"]["high"]))
+                    joint_prim.CreateLowerLimitAttr().Set(float(info["limits"]["low"]))
+                    joint_prim.CreateUpperLimitAttr().Set(float(info["limits"]["high"]))
 
             created_joints += 1
             print(f"  Created {joint_type} joint: {joint_name_key}")
