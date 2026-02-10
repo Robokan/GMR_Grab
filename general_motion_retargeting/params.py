@@ -25,6 +25,8 @@ ROBOT_XML_DICT = {
     "tienkung": ASSET_ROOT / "tienkung" / "mjcf" / "tienkung.xml",
     "pal_talos": ASSET_ROOT / "pal_talos" / "talos.xml",
     "fourier_gr3": ASSET_ROOT / "fourier_gr3v2_1_1" / "mjcf" / "gr3v2_1_1_dummy_hand.xml",
+    "atlas": ASSET_ROOT / "atlas_mujoco" / "rigs" / "Atlas2025" / "mujoco_output" / "atlas.xml",
+    "unitree_g1_revo2": pathlib.Path("/home/evaughan/sparkpack/SparkProtoMotions/protomotions/data/assets/mjcf/g1_bm_revo2.xml"),
 }
 
 IK_CONFIG_DICT = {
@@ -49,11 +51,15 @@ IK_CONFIG_DICT = {
         "pnd_adam_inspire": IK_CONFIG_ROOT / "smplx_to_adam_inspire.json",
         "tienkung": IK_CONFIG_ROOT / "smplx_to_tienkung.json",
         "fourier_gr3": IK_CONFIG_ROOT / "smplx_to_gr3.json",
+        "atlas": IK_CONFIG_ROOT / "smplx_to_atlas.json",
+        "unitree_g1_revo2": IK_CONFIG_ROOT / "smplx_to_g1_revo2.json",
     },
     # SMPL-X with hands (for GRAB dataset and similar)
     "smplx_hands":{
         "unitree_g1_with_hands": IK_CONFIG_ROOT / "smplx_to_g1_with_hands.json",
         "pnd_adam_inspire": IK_CONFIG_ROOT / "smplx_to_adam_inspire.json",
+        "atlas": IK_CONFIG_ROOT / "smplx_to_atlas.json",
+        "unitree_g1_revo2": IK_CONFIG_ROOT / "smplx_to_g1_revo2.json",
     },
     # SMPL-X with hands - absolute positions (no scaling for wrists/hands)
     # Use this for manipulation tasks where hand position must match exactly
@@ -124,6 +130,8 @@ ROBOT_BASE_DICT = {
     "tienkung": "Base_link",
     "pal_talos": "base_link",
     "fourier_gr3": "base_link",
+    "atlas": "Hip",
+    "unitree_g1_revo2": "pelvis",
 }
 
 VIEWER_CAM_DISTANCE_DICT = {
@@ -147,4 +155,6 @@ VIEWER_CAM_DISTANCE_DICT = {
     "tienkung": 3.0,
     "pal_talos": 3.0,
     "fourier_gr3": 2.0,
+    "atlas": 3.0,
+    "unitree_g1_revo2": 2.0,
 }

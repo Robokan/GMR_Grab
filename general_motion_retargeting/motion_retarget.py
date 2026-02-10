@@ -114,6 +114,25 @@ class GeneralMotionRetargeting:
             if verbose and self.finger_joint_mapping:
                 print(f"[GMR] Loaded {len(self.finger_joint_mapping)} finger joint mappings")
 
+        # Load static joint position offsets if available
+        # These are fixed offsets added to specific joints after IK (e.g., wrist roll for palm orientation)
+        self.joint_position_offsets = {}
+        if "joint_position_offsets" in ik_config:
+            for joint_name, offset_val in ik_config["joint_position_offsets"].items():
+                joint_id = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_JOINT, joint_name)
+                if joint_id >= 0:
+                    qpos_idx = self.model.jnt_qposadr[joint_id]
+                    lower = self.model.jnt_range[joint_id][0]
+                    upper = self.model.jnt_range[joint_id][1]
+                    self.joint_position_offsets[joint_name] = {
+                        "qpos_idx": qpos_idx,
+                        "offset": offset_val,
+                        "lower": lower,
+                        "upper": upper,
+                    }
+            if verbose and self.joint_position_offsets:
+                print(f"[GMR] Loaded {len(self.joint_position_offsets)} joint position offsets")
+
         self.max_iter = 10
 
         self.solver = solver
@@ -261,6 +280,10 @@ class GeneralMotionRetargeting:
         # Apply finger joint mapping if enabled (direct joint angle control)
         if self.use_finger_mapping and self.raw_human_data is not None:
             qpos = self.apply_finger_mapping(qpos)
+        
+        # Apply static joint position offsets (e.g., wrist roll for palm orientation)
+        if self.joint_position_offsets:
+            qpos = self.apply_joint_position_offsets(qpos)
             
         return qpos
     
@@ -296,6 +319,20 @@ class GeneralMotionRetargeting:
             
         return qpos
 
+    def apply_joint_position_offsets(self, qpos):
+        """Apply static position offsets to specific joints.
+        
+        Used for fixed corrections like wrist roll to compensate for
+        hand mounting orientation differences.
+        """
+        for joint_name, info in self.joint_position_offsets.items():
+            idx = info["qpos_idx"]
+            qpos[idx] = np.clip(
+                qpos[idx] + info["offset"],
+                info["lower"],
+                info["upper"],
+            )
+        return qpos
 
     def error1(self):
         return np.linalg.norm(
