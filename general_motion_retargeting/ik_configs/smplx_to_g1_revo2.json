@@ -26,8 +26,8 @@
     },
 
     "joint_position_offsets": {
-        "left_wrist_roll_joint": 1.5708,
-        "right_wrist_roll_joint": -1.5708
+        "left_wrist_roll_joint": -1.5708,
+        "right_wrist_roll_joint": 1.5708
     },
 
     "finger_joint_mapping": {
