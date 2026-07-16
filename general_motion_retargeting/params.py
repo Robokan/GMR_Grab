@@ -26,6 +26,7 @@ ROBOT_XML_DICT = {
     "pal_talos": ASSET_ROOT / "pal_talos" / "talos.xml",
     "fourier_gr3": ASSET_ROOT / "fourier_gr3v2_1_1" / "mjcf" / "gr3v2_1_1_dummy_hand.xml",
     "atlas": ASSET_ROOT / "atlas_mujoco" / "rigs" / "Atlas2025" / "mujoco_output" / "atlas.xml",
+    "atlas_fists": ASSET_ROOT / "atlas_mujoco" / "atlas.xml",
     "unitree_g1_revo2": pathlib.Path("/home/evaughan/sparkpack/SparkProtoMotions/protomotions/data/assets/mjcf/g1_bm_revo2.xml"),
 }
 
@@ -52,6 +53,7 @@ IK_CONFIG_DICT = {
         "tienkung": IK_CONFIG_ROOT / "smplx_to_tienkung.json",
         "fourier_gr3": IK_CONFIG_ROOT / "smplx_to_gr3.json",
         "atlas": IK_CONFIG_ROOT / "smplx_to_atlas.json",
+        "atlas_fists": IK_CONFIG_ROOT / "smplx_to_atlas.json",
         "unitree_g1_revo2": IK_CONFIG_ROOT / "smplx_to_g1_revo2.json",
     },
     # SMPL-X with hands (for GRAB dataset and similar)
@@ -131,6 +133,7 @@ ROBOT_BASE_DICT = {
     "pal_talos": "base_link",
     "fourier_gr3": "base_link",
     "atlas": "Hip",
+    "atlas_fists": "Hip",
     "unitree_g1_revo2": "pelvis",
 }
 
@@ -156,5 +159,6 @@ VIEWER_CAM_DISTANCE_DICT = {
     "pal_talos": 3.0,
     "fourier_gr3": 2.0,
     "atlas": 3.0,
+    "atlas_fists": 3.0,
     "unitree_g1_revo2": 2.0,
 }
