@@ -63,16 +63,16 @@ if __name__ == "__main__":
                 tgt_robot=args.robot,
                 verbose=False,
             )
-        else:
-            # reset IK state so each clip starts from the rest pose instead of
-            # the previous clip's final configuration
-            retarget.configuration.update(retarget.model.qpos0)
             viewer = RobotMotionViewer(
                 robot_type=args.robot,
                 motion_fps=fps,
                 record_video=args.record_video,
                 video_path=args.video_path,
             )
+        else:
+            # reset IK state so each clip starts from the rest pose instead of
+            # the previous clip's final configuration
+            retarget.configuration.update(retarget.model.qpos0)
 
         qpos_list = []
         i = 0
