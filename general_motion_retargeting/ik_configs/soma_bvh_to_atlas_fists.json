@@ -7,17 +7,17 @@
     "use_ik_match_table2": true,
     "use_finger_mapping": false,
     "human_scale_table": {
-        "Hips": 1.3265,
+        "Hips": 1.0612,
         "Chest": 0.9087,
         "LeftLeg": 1.0153,
-        "LeftShin": 1.2892,
-        "LeftFoot": 1.2993,
+        "LeftShin": 1.0594,
+        "LeftFoot": 1.0558,
         "LeftArm": 1.6404,
         "LeftForeArm": 1.4387,
         "LeftHand": 1.5719,
         "RightLeg": 1.0212,
-        "RightShin": 1.2878,
-        "RightFoot": 1.299,
+        "RightShin": 1.0594,
+        "RightFoot": 1.0558,
         "RightArm": 1.5502,
         "RightForeArm": 1.3918,
         "RightHand": 1.5342
@@ -25,7 +25,11 @@
     "ik_match_table1": {
         "Hip": [
             "Hips",
-            100,
+            [
+                100,
+                100,
+                20
+            ],
             10,
             [
                 0.0,
@@ -267,7 +271,11 @@
     "ik_match_table2": {
         "Hip": [
             "Hips",
-            100,
+            [
+                100,
+                100,
+                20
+            ],
             5,
             [
                 0.0,

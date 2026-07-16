@@ -171,7 +171,8 @@ class GeneralMotionRetargeting:
         
         for frame_name, entry in self.ik_match_table1.items():
             body_name, pos_weight, rot_weight, pos_offset, rot_offset = entry
-            if pos_weight != 0 or rot_weight != 0:
+            # weights may be scalars or per-axis [x, y, z] lists
+            if np.any(np.atleast_1d(pos_weight)) or np.any(np.atleast_1d(rot_weight)):
                 task = mink.FrameTask(
                     frame_name=frame_name,
                     frame_type="body",
@@ -189,7 +190,7 @@ class GeneralMotionRetargeting:
         
         for frame_name, entry in self.ik_match_table2.items():
             body_name, pos_weight, rot_weight, pos_offset, rot_offset = entry
-            if pos_weight != 0 or rot_weight != 0:
+            if np.any(np.atleast_1d(pos_weight)) or np.any(np.atleast_1d(rot_weight)):
                 task = mink.FrameTask(
                     frame_name=frame_name,
                     frame_type="body",
