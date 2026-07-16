@@ -53,7 +53,7 @@ IK_CONFIG_DICT = {
         "tienkung": IK_CONFIG_ROOT / "smplx_to_tienkung.json",
         "fourier_gr3": IK_CONFIG_ROOT / "smplx_to_gr3.json",
         "atlas": IK_CONFIG_ROOT / "smplx_to_atlas.json",
-        "atlas_fists": IK_CONFIG_ROOT / "smplx_to_atlas.json",
+        "atlas_fists": IK_CONFIG_ROOT / "smplx_to_atlas_fists.json",
         "unitree_g1_revo2": IK_CONFIG_ROOT / "smplx_to_g1_revo2.json",
     },
     # SMPL-X with hands (for GRAB dataset and similar)
@@ -96,7 +96,7 @@ IK_CONFIG_DICT = {
     # SOMA-skeleton BVH (BONES-SEED dataset)
     "soma_bvh":{
         "atlas": IK_CONFIG_ROOT / "soma_bvh_to_atlas.json",
-        "atlas_fists": IK_CONFIG_ROOT / "soma_bvh_to_atlas.json",
+        "atlas_fists": IK_CONFIG_ROOT / "soma_bvh_to_atlas_fists.json",
     },
     "bvh_xsens":{
         "unitree_g1": IK_CONFIG_ROOT / "bvh_xsens_to_g1.json",

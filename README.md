@@ -365,7 +365,7 @@ The [BONES-SEED dataset](https://huggingface.co/datasets/bones-studio/seed) (~14
 
 Note: the rig hierarchy includes finger chains, but the data targets the SOMA23 character (23 actuated bodies) — the finger channels carry no animation. There is therefore no hand data to retarget, and `atlas_fists` is the natural target; `atlas` works too (its fingers just stay open).
 
-Supported targets: `atlas`, `atlas_fists` (IK config: `soma_bvh_to_atlas.json`).
+Supported targets: `atlas` (`soma_bvh_to_atlas.json`) and `atlas_fists` (`soma_bvh_to_atlas_fists.json` — the two Atlas models have different body frame conventions, so each needs its own offsets).
 
 Play a single motion:
 
