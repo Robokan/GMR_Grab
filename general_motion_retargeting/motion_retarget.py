@@ -84,6 +84,9 @@ class GeneralMotionRetargeting:
         self.use_ik_match_table2 = ik_config["use_ik_match_table2"]
         self.human_scale_table = ik_config["human_scale_table"]
         self.ground = ik_config["ground_height"] * np.array([0, 0, 1])
+        # low-priority regularizer pulling redundant joints toward the rest
+        # pose; prevents null-space wind-up in kinematically redundant limbs
+        self.posture_weight = ik_config.get("posture_weight", 0.0)
         
         # Load finger joint mapping if available (for direct joint angle control)
         self.use_finger_mapping = ik_config.get("use_finger_mapping", False)
@@ -201,6 +204,14 @@ class GeneralMotionRetargeting:
                 )
                 self.tasks2.append(task)
                 self.task_errors2[task] = []
+
+        if self.posture_weight > 0:
+            posture_task = mink.PostureTask(self.model, cost=self.posture_weight)
+            posture_task.set_target(self.model.qpos0)
+            self.tasks1.append(posture_task)
+            self.tasks2.append(posture_task)
+            self.task_errors1[posture_task] = []
+            self.task_errors2[posture_task] = []
 
   
     def update_targets(self, human_data, offset_to_ground=False):
