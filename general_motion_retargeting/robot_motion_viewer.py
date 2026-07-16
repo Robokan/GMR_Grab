@@ -79,6 +79,12 @@ class RobotMotionViewer:
             )      
 
         self.viewer.opt.flags[mj.mjtVisFlag.mjVIS_TRANSPARENT] = transparent_robot
+
+        # frame the camera on the robot at startup; when follow_camera is off
+        # the user keeps full manual control afterwards
+        self.viewer.cam.lookat[:] = self.data.xpos[self.model.body(self.robot_base).id]
+        self.viewer.cam.distance = self.viewer_cam_distance
+        self.viewer.cam.elevation = -10
         
         if self.record_video:
             assert video_path is not None, "Please provide video path for recording"
