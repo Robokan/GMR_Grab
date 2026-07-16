@@ -351,7 +351,9 @@ By default there is no visualization for batch retargeting.
 
 ## Retargeting from BVH (SOMA / BONES-SEED) to Robot
 
-The [BONES-SEED dataset](https://huggingface.co/datasets/bones-studio/seed) (~142K clips) uses the SOMA skeleton, which differs from LAFAN1 (extra `Root` joint above `Hips`, both carrying translation channels, full finger chains, bone-aligned zero pose). It has its own loader (`general_motion_retargeting/utils/soma_bvh.py`) and entry script.
+The [BONES-SEED dataset](https://huggingface.co/datasets/bones-studio/seed) (~142K clips) uses the SOMA skeleton, which differs from LAFAN1 (extra `Root` joint above `Hips`, both carrying translation channels, bone-aligned zero pose). It has its own loader (`general_motion_retargeting/utils/soma_bvh.py`) and entry script.
+
+Note: the rig hierarchy includes finger chains, but the data targets the SOMA23 character (23 actuated bodies) — the finger channels carry no animation. There is therefore no hand data to retarget, and `atlas_fists` is the natural target; `atlas` works too (its fingers just stay open).
 
 Supported targets: `atlas`, `atlas_fists` (IK config: `soma_bvh_to_atlas.json`).
 
@@ -370,7 +372,6 @@ python scripts/soma_bvh_to_robot.py --bvh_dir <path_to_bvh_dir> --robot atlas --
 - `--shuffle` randomizes directory playback order.
 - `--tgt_fps` sets the retarget/playback rate (default 30; source clips are 120 fps and get subsampled).
 - `--save_path <out.pkl>` saves the retargeted motion (single file only), same format as `smplx_to_robot.py`.
-- Finger data in the BVH is not yet mapped to the Atlas hands (`use_finger_mapping` is off in the SOMA config).
 
 
 
