@@ -174,6 +174,8 @@ This repo is licensed under the [MIT License](LICENSE).
 | More robots coming soon ! |
 | 18 | AgiBot A2 `agibot_a2` | TBD | TBD | TBD | TBD | TBD |
 | 19 | OpenLoong `openloong` | TBD | TBD | TBD | TBD | TBD |
+| 20 | Boston Dynamics Atlas 2025 `atlas` | Leg (2\*4 + 2 ankle) + Waist (2) + Neck/Head (2) + Arm (2\*7) + Hand (2\*7) = 48 | ✅ | TBD | TBD | TBD | TBD | SOMA BVH ✅ |
+| 21 | Boston Dynamics Atlas 2025 (rigid hands) `atlas_fists` | Leg (2\*4 + 2 ankle) + Waist (2) + Neck/Head (2) + Arm (2\*7) = 34 | ✅ | TBD | TBD | TBD | TBD | SOMA BVH ✅ |
 
 
 
@@ -344,6 +346,31 @@ python scripts/bvh_to_robot_dataset.py --src_folder <path_to_dir_of_bvh_data> --
 ```
 
 By default there is no visualization for batch retargeting.
+
+
+
+## Retargeting from BVH (SOMA / BONES-SEED) to Robot
+
+The [BONES-SEED dataset](https://huggingface.co/datasets/bones-studio/seed) (~142K clips) uses the SOMA skeleton, which differs from LAFAN1 (extra `Root` joint above `Hips`, both carrying translation channels, full finger chains, bone-aligned zero pose). It has its own loader (`general_motion_retargeting/utils/soma_bvh.py`) and entry script.
+
+Supported targets: `atlas`, `atlas_fists` (IK config: `soma_bvh_to_atlas.json`).
+
+Play a single motion:
+
+```bash
+python scripts/soma_bvh_to_robot.py --bvh_file <path_to_bvh> --robot atlas --rate_limit --loop
+```
+
+Browse a directory of motions (searched recursively, each clip played once):
+
+```bash
+python scripts/soma_bvh_to_robot.py --bvh_dir <path_to_bvh_dir> --robot atlas --rate_limit
+```
+
+- `--shuffle` randomizes directory playback order.
+- `--tgt_fps` sets the retarget/playback rate (default 30; source clips are 120 fps and get subsampled).
+- `--save_path <out.pkl>` saves the retargeted motion (single file only), same format as `smplx_to_robot.py`.
+- Finger data in the BVH is not yet mapped to the Atlas hands (`use_finger_mapping` is off in the SOMA config).
 
 
 
