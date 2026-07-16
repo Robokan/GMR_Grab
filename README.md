@@ -178,6 +178,16 @@ This repo is licensed under the [MIT License](LICENSE).
 | 21 | Boston Dynamics Atlas 2025 (rigid hands) `atlas_fists` | Leg (2\*4 + 2 ankle) + Waist (2) + Neck/Head (2) + Arm (2\*7) = 34 | ✅ | TBD | TBD | TBD | TBD | SOMA BVH ✅ |
 
 
+### Boston Dynamics Atlas: fingers or fists
+
+Atlas has two models and two supported motion sources, so you can choose articulated fingers or rigid fists per use case:
+
+| Source | `atlas` (articulated fingers) | `atlas_fists` (rigid hands) |
+| --- | --- | --- |
+| SMPL-X (AMASS, OMOMO, ...) | Full body + fingers driven from SMPL-X hand poses (`finger_joint_mapping` in `smplx_to_atlas.json`) | Full body, hands stay rigid |
+| SOMA BVH (BONES-SEED) | Works, but fingers stay open — the data has no finger animation (SOMA23 character) | **Recommended** — matches the fingerless SOMA23 skeleton |
+
+Use `scripts/smplx_to_robot.py` for SMPL-X and `scripts/soma_bvh_to_robot.py` for SOMA BVH; both accept `--robot atlas` or `--robot atlas_fists`.
 
 
 ## Installation
