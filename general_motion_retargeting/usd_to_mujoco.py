@@ -21,7 +21,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
 try:
-    from pxr import Usd, UsdGeom, UsdPhysics, Sdf, Gf
+    from pxr import Usd, UsdGeom, UsdPhysics, UsdShade, Sdf, Gf
 except ImportError:
     print("Error: pxr (OpenUSD) is required. Install via 'pip install usd-core' or use Isaac Sim's Python.")
     sys.exit(1)
@@ -121,6 +121,7 @@ class UsdBody:
         self.usd_world_quat = quat()
         # Tree
         self.meshes = []
+        self.visual_meshes = []  # (asset_name, material_name or None)
         self.children = []
         self.parent = None
         self.joint = None
@@ -170,6 +171,8 @@ class UsdToMujoco:
         self.bodies = {}
         self.joints = []
         self.root_body = None
+        self.used_materials = set()
+        self.material_info = {}
         self.up_axis = UsdGeom.GetStageUpAxis(self.stage)
         self.meters_per_unit = UsdGeom.GetStageMetersPerUnit(self.stage)
 
@@ -205,6 +208,7 @@ class UsdToMujoco:
 
         print("\n--- Collecting meshes ---")
         self._collect_meshes()
+        self._collect_materials()
 
         print("\n--- Exporting meshes ---")
         os.makedirs(self.mesh_dir, exist_ok=True)
@@ -469,28 +473,99 @@ class UsdToMujoco:
                     local_pt = quat_rotate(inv_body_quat, delta)
                     verts.append(local_pt)
 
-                tris = []
+                # UVs (primvars:st); uv index per face corner depends on interpolation
+                uvs, uv_index = [], None
+                st = UsdGeom.PrimvarsAPI(prim).GetPrimvar("st")
+                if st and st.HasValue():
+                    vals = st.Get()
+                    uvs = [(float(u[0]), float(u[1])) for u in vals]
+                    interp = st.GetInterpolation()
+                    st_idx = list(st.GetIndices()) if st.IsIndexed() else None
+                    if interp == "faceVarying":
+                        uv_index = (lambda corner, vidx, si=st_idx:
+                                    si[corner] if si else corner)
+                    else:  # vertex / varying
+                        uv_index = (lambda corner, vidx, si=st_idx:
+                                    si[vidx] if si else vidx)
+
+                # face -> material (GeomSubsets override the mesh-level binding)
+                bound = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial()[0]
+                default_mat = bound.GetPrim().GetName() if bound else None
+                face_mat = [default_mat] * len(fcounts)
+                for subset in UsdShade.MaterialBindingAPI(prim).GetMaterialBindSubsets():
+                    sb = UsdShade.MaterialBindingAPI(subset.GetPrim()).ComputeBoundMaterial()[0]
+                    if not sb:
+                        continue
+                    sname = sb.GetPrim().GetName()
+                    for fi in subset.GetIndicesAttr().Get() or []:
+                        if fi < len(face_mat):
+                            face_mat[fi] = sname
+
+                tris = []          # (v0,v1,v2) for collision export
+                tris_by_mat = {}   # mat -> [((v0,v1,v2), (uv0,uv1,uv2)), ...]
                 idx = 0
-                for cnt in fcounts:
-                    if cnt == 3:
-                        tris.append((findices[idx], findices[idx+1], findices[idx+2]))
-                    elif cnt == 4:
-                        tris.append((findices[idx], findices[idx+1], findices[idx+2]))
-                        tris.append((findices[idx], findices[idx+2], findices[idx+3]))
-                    else:
-                        for i in range(1, cnt-1):
-                            tris.append((findices[idx], findices[idx+i], findices[idx+i+1]))
+                for f_i, cnt in enumerate(fcounts):
+                    corners = [(idx + k, findices[idx + k]) for k in range(cnt)]
+                    mat = face_mat[f_i]
+                    for i in range(1, cnt - 1):
+                        fan = [corners[0], corners[i], corners[i + 1]]
+                        vtri = tuple(v for _, v in fan)
+                        tris.append(vtri)
+                        if uv_index is not None:
+                            uvtri = tuple(uv_index(c, v) for c, v in fan)
+                        else:
+                            uvtri = None
+                        tris_by_mat.setdefault(mat, []).append((vtri, uvtri))
                     idx += cnt
 
-                body.meshes.append({'name': prim.GetName(), 'vertices': verts, 'triangles': tris})
+                body.meshes.append({'name': prim.GetName(), 'vertices': verts,
+                                    'triangles': tris, 'uvs': uvs,
+                                    'tris_by_mat': tris_by_mat})
+                self.used_materials.update(m for m in tris_by_mat if m)
                 total += 1
 
         print(f"  {total} meshes across {len(self.bodies)} bodies")
+        print(f"  materials in use: {sorted(self.used_materials)}")
+
+    def _collect_materials(self):
+        """Resolve each used material to its diffuse texture file (if any)
+        and a fallback diffuse color."""
+        usd_dir = os.path.dirname(self.usd_path)
+        for prim in self.stage.Traverse():
+            if not prim.IsA(UsdShade.Material):
+                continue
+            name = prim.GetName()
+            if name not in self.used_materials:
+                continue
+            tex, color = None, None
+            for shader_prim in Usd.PrimRange(prim):
+                sh = UsdShade.Shader(shader_prim)
+                if not sh:
+                    continue
+                fin = sh.GetInput("file")
+                if tex is None and fin and fin.Get():
+                    cand = fin.Get().resolvedPath or fin.Get().path
+                    if cand.startswith('@'):
+                        cand = cand.strip('@')
+                    if not os.path.isabs(cand):
+                        cand = os.path.join(usd_dir, cand)
+                    if os.path.exists(cand):
+                        tex = cand
+                for cname in ("diffuseColor", "diffuse_color_constant", "diffuse_tint"):
+                    cin = sh.GetInput(cname)
+                    if color is None and cin and cin.Get() is not None:
+                        c = cin.Get()
+                        color = (float(c[0]), float(c[1]), float(c[2]))
+            self.material_info[name] = {"texture": tex, "color": color}
+            print(f"  material {name}: tex={os.path.basename(tex) if tex else None} color={color}")
 
     def _export_meshes(self):
         for body in self.bodies.values():
             if not body.meshes:
                 continue
+            body.visual_meshes = []
+
+            # merged collision mesh (no UVs) -- same filename as before
             all_v, all_t, off = [], [], 0
             for md in body.meshes:
                 all_v.extend(md['vertices'])
@@ -500,14 +575,46 @@ class UsdToMujoco:
             if not all_v:
                 continue
             fn = f"{body.name}.obj"
-            path = os.path.join(self.mesh_dir, fn)
-            with open(path, 'w') as f:
+            with open(os.path.join(self.mesh_dir, fn), 'w') as f:
                 f.write(f"# {body.name}: {len(all_v)} verts, {len(all_t)} tris\n")
                 for v in all_v:
                     f.write(f"v {v[0]:.8f} {v[1]:.8f} {v[2]:.8f}\n")
                 for t_ in all_t:
                     f.write(f"f {t_[0]+1} {t_[1]+1} {t_[2]+1}\n")
             print(f"  {fn:24s}  {len(all_v):6d} verts  {len(all_t):6d} tris")
+
+            # per-material visual meshes with UVs
+            mats = sorted({m for md in body.meshes for m in md['tris_by_mat']},
+                          key=lambda x: (x is None, str(x)))
+            for mat in mats:
+                lines_v, lines_vt, lines_f = [], [], []
+                voff = vtoff = 0
+                n_tris = 0
+                for md in body.meshes:
+                    tris = md['tris_by_mat'].get(mat)
+                    if not tris:
+                        continue
+                    for v in md['vertices']:
+                        lines_v.append(f"v {v[0]:.8f} {v[1]:.8f} {v[2]:.8f}")
+                    has_uv = bool(md['uvs'])
+                    if has_uv:
+                        for u in md['uvs']:
+                            lines_vt.append(f"vt {u[0]:.8f} {u[1]:.8f}")
+                    for vtri, uvtri in tris:
+                        n_tris += 1
+                        if has_uv and uvtri is not None:
+                            lines_f.append("f " + " ".join(
+                                f"{v+1+voff}/{u+1+vtoff}" for v, u in zip(vtri, uvtri)))
+                        else:
+                            lines_f.append("f " + " ".join(f"{v+1+voff}" for v in vtri))
+                    voff += len(md['vertices'])
+                    vtoff += len(md['uvs'])
+                suffix = mat if mat else "default"
+                asset_name = f"{body.name}__{suffix}"
+                with open(os.path.join(self.mesh_dir, f"{asset_name}.obj"), 'w') as f:
+                    f.write(f"# {asset_name}: {n_tris} tris\n")
+                    f.write("\n".join(lines_v + lines_vt + lines_f) + "\n")
+                body.visual_meshes.append((asset_name, mat))
 
     # ── MuJoCo XML generation ─────────────────────────────────────────────
 
@@ -574,6 +681,19 @@ class UsdToMujoco:
                    density="1000", rgba="0.5 0.5 0.5 0.5")
 
         asset = SubElement(root, "asset")
+        tex_dir_rel = None
+        for mat in sorted(self.used_materials):
+            info = self.material_info.get(mat, {})
+            attrs = {"name": mat, "specular": "0.4", "shininess": "0.4"}
+            if info.get("texture"):
+                tex_rel = os.path.relpath(info["texture"], self.output_dir)
+                SubElement(asset, "texture", type="2d", name=f"tex_{mat}", file=tex_rel)
+                attrs["texture"] = f"tex_{mat}"
+            elif info.get("color"):
+                attrs["rgba"] = fmt(info["color"]) + " 1"
+            else:
+                attrs["rgba"] = "0.25 0.25 0.25 1"
+            SubElement(asset, "material", **attrs)
         self._add_mesh_assets(self.root_body, asset, set())
 
         wb = SubElement(root, "worldbody")
@@ -603,6 +723,8 @@ class UsdToMujoco:
         if body.meshes and body.name not in seen:
             seen.add(body.name)
             SubElement(asset_el, "mesh", name=body.name, file=f"{body.name}.obj")
+            for asset_name, _mat in body.visual_meshes:
+                SubElement(asset_el, "mesh", name=asset_name, file=f"{asset_name}.obj")
         for c in body.children:
             self._add_mesh_assets(c, asset_el, seen)
 
@@ -642,7 +764,15 @@ class UsdToMujoco:
                 SubElement(bel, "joint", name=j.name, type="ball", pos=fmt(jp))
 
         if body.meshes:
-            SubElement(bel, "geom", type="mesh", mesh=body.name, rgba="0.7 0.7 0.7 1")
+            if body.visual_meshes:
+                for asset_name, mat in body.visual_meshes:
+                    if mat and mat in self.material_info:
+                        SubElement(bel, "geom", type="mesh", mesh=asset_name, material=mat)
+                    else:
+                        SubElement(bel, "geom", type="mesh", mesh=asset_name,
+                                   rgba="0.7 0.7 0.7 1")
+            else:
+                SubElement(bel, "geom", type="mesh", mesh=body.name, rgba="0.7 0.7 0.7 1")
             if self.use_mesh_collision:
                 SubElement(bel, "geom", type="mesh", mesh=body.name, **{"class": "collision"})
 
