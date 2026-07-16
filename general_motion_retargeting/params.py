@@ -93,6 +93,11 @@ IK_CONFIG_DICT = {
     "bvh_nokov":{
         "unitree_g1": IK_CONFIG_ROOT / "bvh_nokov_to_g1.json",
     },
+    # SOMA-skeleton BVH (BONES-SEED dataset)
+    "soma_bvh":{
+        "atlas": IK_CONFIG_ROOT / "soma_bvh_to_atlas.json",
+        "atlas_fists": IK_CONFIG_ROOT / "soma_bvh_to_atlas.json",
+    },
     "bvh_xsens":{
         "unitree_g1": IK_CONFIG_ROOT / "bvh_xsens_to_g1.json",
         "unitree_h1_2": IK_CONFIG_ROOT / "bvh_xsens_to_h1_2.json",
