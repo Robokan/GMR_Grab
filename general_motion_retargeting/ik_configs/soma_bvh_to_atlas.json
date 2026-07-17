@@ -7,7 +7,7 @@
     "use_ik_match_table2": true,
     "use_finger_mapping": false,
     "human_scale_table": {
-        "Hips": 1.3265,
+        "Hips": 1.3273,
         "Chest": 0.9087,
         "LeftLeg": 1.0153,
         "LeftShin": 1.3243,
@@ -514,5 +514,59 @@
             ]
         ]
     },
-    "posture_weight": 0.5
+    "posture_weight": 0.5,
+    "human_chain_scale_table": {
+        "Chest": {
+            "parent": "Hips",
+            "robot_length": 0.1783
+        },
+        "LeftArm": {
+            "parent": "Chest",
+            "robot_length": 0.4814
+        },
+        "LeftForeArm": {
+            "parent": "LeftArm",
+            "robot_length": 0.3336
+        },
+        "LeftHand": {
+            "parent": "LeftForeArm",
+            "robot_length": 0.5169
+        },
+        "RightArm": {
+            "parent": "Chest",
+            "robot_length": 0.4805
+        },
+        "RightForeArm": {
+            "parent": "RightArm",
+            "robot_length": 0.3336
+        },
+        "RightHand": {
+            "parent": "RightForeArm",
+            "robot_length": 0.5169
+        },
+        "LeftLeg": {
+            "parent": "Hips",
+            "robot_length": 0.1357
+        },
+        "LeftShin": {
+            "parent": "LeftLeg",
+            "robot_length": 0.5939
+        },
+        "LeftFoot": {
+            "parent": "LeftShin",
+            "robot_length": 0.5553
+        },
+        "RightLeg": {
+            "parent": "Hips",
+            "robot_length": 0.1357
+        },
+        "RightShin": {
+            "parent": "RightLeg",
+            "robot_length": 0.5939
+        },
+        "RightFoot": {
+            "parent": "RightShin",
+            "robot_length": 0.5553
+        }
+    }
 }

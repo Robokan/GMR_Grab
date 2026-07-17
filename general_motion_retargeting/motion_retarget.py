@@ -87,6 +87,11 @@ class GeneralMotionRetargeting:
         # low-priority regularizer pulling redundant joints toward the rest
         # pose; prevents null-space wind-up in kinematically redundant limbs
         self.posture_weight = ik_config.get("posture_weight", 0.0)
+        # chain-scaled bodies: keep the human segment *direction* but impose
+        # the robot's segment *length*, so limb targets stay exactly reachable
+        # regardless of human/robot proportion mismatch (entries are ordered
+        # parent-first; they override the radial scale table)
+        self.chain_scale_table = ik_config.get("human_chain_scale_table", {})
         
         # Load finger joint mapping if available (for direct joint angle control)
         self.use_finger_mapping = ik_config.get("use_finger_mapping", False)
@@ -396,6 +401,18 @@ class GeneralMotionRetargeting:
         # Add unscaled bodies back (transformed relative to scaled root)
         for body_name, (local_pos, quat) in unscaled_bodies.items():
             human_data_global[body_name] = (local_pos + scaled_root_pos, quat)
+
+        # chain-scaled bodies: human direction, robot segment length
+        for body_name, spec in self.chain_scale_table.items():
+            parent = spec["parent"]
+            seg = np.asarray(human_data[body_name][0]) - np.asarray(human_data[parent][0])
+            norm = np.linalg.norm(seg)
+            if norm > 1e-8:
+                seg = seg / norm * spec["robot_length"]
+            human_data_global[body_name] = (
+                np.asarray(human_data_global[parent][0]) + seg,
+                human_data[body_name][1],
+            )
 
         return human_data_global
     

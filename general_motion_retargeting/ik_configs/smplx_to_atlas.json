@@ -7,7 +7,7 @@
     "use_ik_match_table2": true,
     "use_finger_mapping": true,
     "human_scale_table": {
-        "pelvis": 1.604,
+        "pelvis": 1.5596,
         "spine3": 1.2,
         "left_hip": 1.3,
         "right_hip": 1.3,
@@ -602,5 +602,59 @@
             ]
         ]
     },
-    "posture_weight": 0.5
+    "posture_weight": 0.5,
+    "human_chain_scale_table": {
+        "spine3": {
+            "parent": "pelvis",
+            "robot_length": 0.1783
+        },
+        "left_shoulder": {
+            "parent": "spine3",
+            "robot_length": 0.4814
+        },
+        "left_elbow": {
+            "parent": "left_shoulder",
+            "robot_length": 0.3336
+        },
+        "left_wrist": {
+            "parent": "left_elbow",
+            "robot_length": 0.5169
+        },
+        "right_shoulder": {
+            "parent": "spine3",
+            "robot_length": 0.4805
+        },
+        "right_elbow": {
+            "parent": "right_shoulder",
+            "robot_length": 0.3336
+        },
+        "right_wrist": {
+            "parent": "right_elbow",
+            "robot_length": 0.5169
+        },
+        "left_hip": {
+            "parent": "pelvis",
+            "robot_length": 0.1357
+        },
+        "left_knee": {
+            "parent": "left_hip",
+            "robot_length": 0.5939
+        },
+        "left_foot": {
+            "parent": "left_knee",
+            "robot_length": 0.5553
+        },
+        "right_hip": {
+            "parent": "pelvis",
+            "robot_length": 0.1357
+        },
+        "right_knee": {
+            "parent": "right_hip",
+            "robot_length": 0.5939
+        },
+        "right_foot": {
+            "parent": "right_knee",
+            "robot_length": 0.5553
+        }
+    }
 }
