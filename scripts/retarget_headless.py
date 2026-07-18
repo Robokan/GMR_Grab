@@ -63,6 +63,14 @@ def main():
         else:
             retarget.configuration.update(retarget.model.qpos0)
 
+        # Settle the IK on the first frame before recording: each solve does
+        # limited iterations and relies on warm-starting from the previous
+        # frame, so a clip whose first pose is far from qpos0 (event slices,
+        # crouched starts, subject away from origin) otherwise "flies" to the
+        # target over the first recorded frames (observed 137 m/s root).
+        for _ in range(15):
+            retarget.retarget(frames[0])
+
         qpos_list = [retarget.retarget(f) for f in frames]
         motion_data = {
             "fps": fps,

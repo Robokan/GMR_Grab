@@ -74,6 +74,12 @@ if __name__ == "__main__":
             # the previous clip's final configuration
             retarget.configuration.update(retarget.model.qpos0)
 
+        # settle the IK on the first frame so clips that start away from the
+        # origin / in a deep pose don't fly to the target over the first
+        # recorded frames (limited iterations per solve + warm-starting)
+        for _ in range(15):
+            retarget.retarget(frames[0])
+
         qpos_list = []
         i = 0
         while True:
