@@ -150,7 +150,9 @@ class GeneralMotionRetargeting:
             if verbose and self.joint_position_offsets:
                 print(f"[GMR] Loaded {len(self.joint_position_offsets)} joint position offsets")
 
-        self.max_iter = 10
+        # Allow per-robot IK config to request more mink iterations (combat /
+        # ground-contact clips often need >10 to settle without joint teleports).
+        self.max_iter = int(ik_config.get("max_iter", 10))
 
         self.solver = solver
         self.damping = damping

@@ -5,6 +5,7 @@
     "human_height_assumption": 1.8,
     "use_ik_match_table1": true,
     "use_ik_match_table2": true,
+    "posture_weight": 2.0,
     "human_scale_table": {
         "_comment": "Root/torso scale must be >1 when legs use human_chain_scale_table: radial root scaling alone lowers pelvis Z, then full robot leg lengths push feet through the floor. 1.20 matches T800 standing base height (~1.02m) so soles sit near z=0.",
         "pelvis": 1.2,
@@ -229,8 +230,8 @@
         ],
         "LINK_ELBOW_PITCH_L": [
             "left_elbow",
+            10,
             0,
-            5,
             [
                 0.0,
                 0.0,
@@ -281,8 +282,8 @@
         ],
         "LINK_ELBOW_PITCH_R": [
             "right_elbow",
+            10,
             0,
-            5,
             [
                 0.0,
                 0.0,
@@ -479,8 +480,8 @@
         ],
         "LINK_ELBOW_PITCH_L": [
             "left_elbow",
+            10,
             0,
-            5,
             [
                 0.0,
                 0.0,
@@ -531,8 +532,8 @@
         ],
         "LINK_ELBOW_PITCH_R": [
             "right_elbow",
+            10,
             0,
-            5,
             [
                 0.0,
                 0.0,

@@ -27,9 +27,18 @@ def main():
     p.add_argument("--bvh_list", default=None, help="file with one BVH path per line")
     p.add_argument("--shard", default=None, help="i/N: process shard i of N")
     p.add_argument("--out_dir", required=True)
-    p.add_argument("--robot", choices=["atlas", "atlas_fists"], default="atlas_fists")
+    p.add_argument(
+        "--robot",
+        choices=["atlas", "atlas_fists", "t800", "t800_transparent"],
+        default="atlas_fists",
+    )
     p.add_argument("--tgt_fps", type=int, default=30)
     p.add_argument("--limit", type=int, default=0, help="max clips (0 = all)")
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite existing .npz outputs (default: skip if present)",
+    )
     args = p.parse_args()
 
     if args.bvh_file:
@@ -48,6 +57,14 @@ def main():
 
     retarget = None
     for ci, bvh in enumerate(bvh_files):
+        # .npz, not pickle: the ProtoMotions container runs numpy 1.26 and
+        # cannot unpickle numpy-2 arrays; the npy format is version-stable.
+        out = os.path.join(
+            args.out_dir, os.path.basename(bvh).replace(".bvh", ".npz")
+        )
+        if os.path.exists(out) and not args.force:
+            continue
+
         frames, human_height, src_fps = load_soma_bvh_file(bvh)
         step = max(1, round(src_fps / args.tgt_fps))
         frames = frames[::step]
@@ -68,36 +85,21 @@ def main():
         # frame, so a clip whose first pose is far from qpos0 (event slices,
         # crouched starts, subject away from origin) otherwise "flies" to the
         # target over the first recorded frames (observed 137 m/s root).
-        for _ in range(15):
+        for _ in range(30):
             retarget.retarget(frames[0])
 
         qpos_list = [retarget.retarget(f) for f in frames]
-        motion_data = {
-            "fps": fps,
-            "root_pos": np.array([q[:3] for q in qpos_list]),
-            "root_rot": np.array([q[3:7][[1, 2, 3, 0]] for q in qpos_list]),  # wxyz->xyzw
-            "dof_pos": np.array([q[7:] for q in qpos_list]),
-            "local_body_pos": None,
-            "link_body_list": None,
-            "actual_human_height": retarget.actual_human_height,
-            "human_height_assumption": retarget.human_height_assumption,
-            "height_ratio": retarget.height_ratio,
-            "robot_type": args.robot,
-        }
-        # .npz, not pickle: the ProtoMotions container runs numpy 1.26 and
-        # cannot unpickle numpy-2 arrays; the npy format is version-stable.
-        out = os.path.join(
-            args.out_dir, os.path.basename(bvh).replace(".bvh", ".npz")
-        )
-        if os.path.exists(out):
-            continue
+        dof_pos = np.array([q[7:] for q in qpos_list])
+        # Unwrap hinges over time so ±π IK flips don't become limb teleports.
+        for j in range(dof_pos.shape[1]):
+            dof_pos[:, j] = np.unwrap(dof_pos[:, j])
         np.savez(
             out,
-            fps=motion_data["fps"],
-            root_pos=motion_data["root_pos"],
-            root_rot=motion_data["root_rot"],
-            dof_pos=motion_data["dof_pos"],
-            robot_type=motion_data["robot_type"],
+            fps=fps,
+            root_pos=np.array([q[:3] for q in qpos_list]),
+            root_rot=np.array([q[3:7][[1, 2, 3, 0]] for q in qpos_list]),  # wxyz->xyzw
+            dof_pos=dof_pos,
+            robot_type=args.robot,
         )
         print(f"  ({ci+1}/{len(bvh_files)}) {os.path.basename(out)}: "
               f"{len(frames)} frames @ {fps:.0f} fps")
