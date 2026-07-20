@@ -118,6 +118,10 @@ class GeneralMotionRetargeting:
                         "offset": config["offset"],
                         "lower": lower,
                         "upper": upper,
+                        # Optional parent body name for local (parent-relative)
+                        # euler extraction. Without this, global euler is used
+                        # and wrist motion contaminates finger angles.
+                        "parent": config.get("parent"),
                     }
             if verbose and self.finger_joint_mapping:
                 print(f"[GMR] Loaded {len(self.finger_joint_mapping)} finger joint mappings")
@@ -309,6 +313,10 @@ class GeneralMotionRetargeting:
         
         Extracts the rotation angle around a specified axis from the SMPL-X joint
         quaternion and maps it directly to the robot finger joint.
+
+        Prefer parent-relative (local) euler when a parent is configured — SMPL-X
+        mocap zeros are the MANO mean hand (not a flat open hand), and global
+        euler tracks the wrist, which would otherwise corrupt finger angles.
         """
         for human_joint, mapping in self.finger_joint_mapping.items():
             if human_joint not in self.raw_human_data:
@@ -320,6 +328,13 @@ class GeneralMotionRetargeting:
             # Convert to rotation and extract euler angles (xyz order)
             # scipy uses (x, y, z, w) format
             rot = R.from_quat([quat[1], quat[2], quat[3], quat[0]])
+            parent_name = mapping.get("parent")
+            if parent_name and parent_name in self.raw_human_data:
+                _, parent_quat = self.raw_human_data[parent_name]
+                parent_rot = R.from_quat(
+                    [parent_quat[1], parent_quat[2], parent_quat[3], parent_quat[0]]
+                )
+                rot = parent_rot.inv() * rot
             euler = rot.as_euler('xyz')  # radians
             
             # Extract the angle around the specified axis (0=x, 1=y, 2=z)

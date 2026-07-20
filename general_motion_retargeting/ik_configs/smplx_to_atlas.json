@@ -24,89 +24,103 @@
     },
     "finger_joint_mapping": {
         "_comment": "Maps SMPL-X finger joint rotations to Atlas finger joints",
-        "_note": "Atlas fingers use X-axis revolute joints. SMPL-X Y-axis (axis=1) correlates with finger curl.",
+        "_note": "SMPL-X zero hand_pose is the MANO mean hand (opposed thumb, slight curl), not a flat open hand. Use parent-relative euler. Atlas has 2 fingers + thumb: index→Finguer1/2, middle→Finguer3/4, thumb→Hand_2+Finguer5/6. Index/middle curl ~Z; thumb1 opposition ~X; thumb2/3 curl ~X. thumb1 scale/offset calibrated so mean-hand rest matches Atlas Hand_2 opposition (~0.42 rad).",
         "left_index1": {
             "robot_joint": "Finguer1_L_Joint",
-            "smplx_axis": 1,
-            "scale": -1.2,
+            "parent": "left_wrist",
+            "smplx_axis": 2,
+            "scale": 1.2,
             "offset": 0.0
         },
         "left_index2": {
             "robot_joint": "Finguer2_L_Joint",
-            "smplx_axis": 1,
-            "scale": -1.0,
+            "parent": "left_index1",
+            "smplx_axis": 2,
+            "scale": 1.0,
             "offset": 0.0
         },
         "left_middle1": {
             "robot_joint": "Finguer3_L_Joint",
-            "smplx_axis": 1,
-            "scale": -1.2,
+            "parent": "left_wrist",
+            "smplx_axis": 2,
+            "scale": 1.2,
             "offset": 0.0
         },
         "left_middle2": {
             "robot_joint": "Finguer4_L_Joint",
-            "smplx_axis": 1,
-            "scale": -1.0,
+            "parent": "left_middle1",
+            "smplx_axis": 2,
+            "scale": 1.0,
             "offset": 0.0
         },
         "left_thumb1": {
             "robot_joint": "Hand_2_L_Joint",
-            "smplx_axis": 1,
-            "scale": 0.6,
-            "offset": 0.0
+            "parent": "left_wrist",
+            "smplx_axis": 0,
+            "scale": -0.62,
+            "offset": 0.955
         },
         "left_thumb2": {
             "robot_joint": "Finguer5_L_Joint",
-            "smplx_axis": 1,
-            "scale": -0.8,
+            "parent": "left_thumb1",
+            "smplx_axis": 0,
+            "scale": 0.8,
             "offset": 0.0
         },
         "left_thumb3": {
             "robot_joint": "Finguer6_L_Joint",
-            "smplx_axis": 1,
+            "parent": "left_thumb2",
+            "smplx_axis": 0,
             "scale": -1.0,
             "offset": 0.0
         },
         "right_index1": {
             "robot_joint": "Finguer1_R_Joint",
-            "smplx_axis": 1,
-            "scale": 1.2,
+            "parent": "right_wrist",
+            "smplx_axis": 2,
+            "scale": -1.2,
             "offset": 0.0
         },
         "right_index2": {
             "robot_joint": "Finguer2_R_Joint",
-            "smplx_axis": 1,
-            "scale": 1.0,
+            "parent": "right_index1",
+            "smplx_axis": 2,
+            "scale": -1.0,
             "offset": 0.0
         },
         "right_middle1": {
             "robot_joint": "Finguer3_R_Joint",
-            "smplx_axis": 1,
-            "scale": 1.2,
+            "parent": "right_wrist",
+            "smplx_axis": 2,
+            "scale": -1.2,
             "offset": 0.0
         },
         "right_middle2": {
             "robot_joint": "Finguer4_R_Joint",
-            "smplx_axis": 1,
-            "scale": 1.0,
+            "parent": "right_middle1",
+            "smplx_axis": 2,
+            "scale": -1.0,
             "offset": 0.0
         },
         "right_thumb1": {
             "robot_joint": "Hand_2_R_Joint",
-            "smplx_axis": 1,
-            "scale": 0.6,
-            "offset": 0.0
+            "parent": "right_wrist",
+            "smplx_axis": 0,
+            "scale": 0.62,
+            "offset": -0.955
         },
         "right_thumb2": {
             "robot_joint": "Finguer5_R_Joint",
-            "smplx_axis": 1,
+            "parent": "right_thumb1",
+            "smplx_axis": 0,
             "scale": 0.8,
             "offset": 0.0
         },
         "right_thumb3": {
             "robot_joint": "Finguer6_R_Joint",
-            "smplx_axis": 1,
-            "scale": 1.0,
+            "parent": "right_thumb2",
+            "smplx_axis": 0,
+            "scale": -1.0,
             "offset": 0.0
         }
     },
