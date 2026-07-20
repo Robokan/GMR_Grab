@@ -6,8 +6,9 @@
     "use_ik_match_table1": true,
     "use_ik_match_table2": true,
     "human_scale_table": {
-        "pelvis": 0.85,
-        "spine3": 0.85,
+        "_comment": "Root/torso scale must be >1 when legs use human_chain_scale_table: radial root scaling alone lowers pelvis Z, then full robot leg lengths push feet through the floor. 1.20 matches T800 standing base height (~1.02m) so soles sit near z=0.",
+        "pelvis": 1.2,
+        "spine3": 1.2,
         "left_hip": 0.85,
         "right_hip": 0.85,
         "left_knee": 0.85,
@@ -20,7 +21,62 @@
         "right_elbow": 0.8,
         "left_wrist": 0.8,
         "right_wrist": 0.8,
-        "head": 0.85
+        "head": 1.2
+    },
+    "human_chain_scale_table": {
+        "_comment": "Segment lengths for T800. Shoulder length capped at 0.28 (rest geometric length is 0.347) so target shoulder width stays near the robot's ~0.45m span; the full length over-asks (~0.60m) when arms hang and leaves fists short.",
+        "spine3": {
+            "parent": "pelvis",
+            "robot_length": 0.1038
+        },
+        "left_shoulder": {
+            "parent": "spine3",
+            "robot_length": 0.28
+        },
+        "left_elbow": {
+            "parent": "left_shoulder",
+            "robot_length": 0.2345
+        },
+        "left_wrist": {
+            "parent": "left_elbow",
+            "robot_length": 0.2663
+        },
+        "right_shoulder": {
+            "parent": "spine3",
+            "robot_length": 0.28
+        },
+        "right_elbow": {
+            "parent": "right_shoulder",
+            "robot_length": 0.2345
+        },
+        "right_wrist": {
+            "parent": "right_elbow",
+            "robot_length": 0.2663
+        },
+        "left_hip": {
+            "parent": "pelvis",
+            "robot_length": 0.1608
+        },
+        "left_knee": {
+            "parent": "left_hip",
+            "robot_length": 0.3695
+        },
+        "left_foot": {
+            "parent": "left_knee",
+            "robot_length": 0.4766
+        },
+        "right_hip": {
+            "parent": "pelvis",
+            "robot_length": 0.1608
+        },
+        "right_knee": {
+            "parent": "right_hip",
+            "robot_length": 0.3695
+        },
+        "right_foot": {
+            "parent": "right_knee",
+            "robot_length": 0.4766
+        }
     },
     "ik_match_table1": {
         "LINK_BASE": [
@@ -153,7 +209,11 @@
         ],
         "LINK_SHOULDER_ROLL_L": [
             "left_shoulder",
-            8,
+            [
+                40,
+                40,
+                100
+            ],
             0,
             [
                 0.0,
@@ -169,8 +229,8 @@
         ],
         "LINK_ELBOW_PITCH_L": [
             "left_elbow",
-            40,
             0,
+            5,
             [
                 0.0,
                 0.0,
@@ -185,7 +245,7 @@
         ],
         "LINK_WRIST_END_L": [
             "left_wrist",
-            40,
+            100,
             0,
             [
                 0.0,
@@ -201,7 +261,11 @@
         ],
         "LINK_SHOULDER_ROLL_R": [
             "right_shoulder",
-            8,
+            [
+                40,
+                40,
+                100
+            ],
             0,
             [
                 0.0,
@@ -217,8 +281,8 @@
         ],
         "LINK_ELBOW_PITCH_R": [
             "right_elbow",
-            40,
             0,
+            5,
             [
                 0.0,
                 0.0,
@@ -233,7 +297,7 @@
         ],
         "LINK_WRIST_END_R": [
             "right_wrist",
-            40,
+            100,
             0,
             [
                 0.0,
@@ -395,7 +459,11 @@
         ],
         "LINK_SHOULDER_ROLL_L": [
             "left_shoulder",
-            8,
+            [
+                40,
+                40,
+                100
+            ],
             0,
             [
                 0.0,
@@ -411,8 +479,8 @@
         ],
         "LINK_ELBOW_PITCH_L": [
             "left_elbow",
-            40,
             0,
+            5,
             [
                 0.0,
                 0.0,
@@ -427,7 +495,7 @@
         ],
         "LINK_WRIST_END_L": [
             "left_wrist",
-            40,
+            100,
             0,
             [
                 0.0,
@@ -443,7 +511,11 @@
         ],
         "LINK_SHOULDER_ROLL_R": [
             "right_shoulder",
-            8,
+            [
+                40,
+                40,
+                100
+            ],
             0,
             [
                 0.0,
@@ -459,8 +531,8 @@
         ],
         "LINK_ELBOW_PITCH_R": [
             "right_elbow",
-            40,
             0,
+            5,
             [
                 0.0,
                 0.0,
@@ -475,7 +547,7 @@
         ],
         "LINK_WRIST_END_R": [
             "right_wrist",
-            40,
+            100,
             0,
             [
                 0.0,

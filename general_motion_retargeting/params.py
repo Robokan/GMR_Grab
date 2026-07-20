@@ -101,6 +101,8 @@ IK_CONFIG_DICT = {
     "soma_bvh":{
         "atlas": IK_CONFIG_ROOT / "soma_bvh_to_atlas.json",
         "atlas_fists": IK_CONFIG_ROOT / "soma_bvh_to_atlas_fists.json",
+        "t800": IK_CONFIG_ROOT / "soma_bvh_to_t800.json",
+        "t800_transparent": IK_CONFIG_ROOT / "soma_bvh_to_t800.json",
     },
     "bvh_xsens":{
         "unitree_g1": IK_CONFIG_ROOT / "bvh_xsens_to_g1.json",

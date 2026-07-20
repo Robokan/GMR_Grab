@@ -70,8 +70,10 @@ class GeneralMotionRetargeting:
         self.human_height_assumption = ik_config["human_height_assumption"]
         self.height_ratio = ratio
             
-        # adjust the human scale table
-        for key in ik_config["human_scale_table"].keys():
+        # adjust the human scale table (skip _comment / non-numeric keys)
+        for key in list(ik_config["human_scale_table"].keys()):
+            if key.startswith("_") or not isinstance(ik_config["human_scale_table"][key], (int, float)):
+                continue
             ik_config["human_scale_table"][key] = ik_config["human_scale_table"][key] * ratio
     
 
@@ -82,7 +84,10 @@ class GeneralMotionRetargeting:
         self.robot_root_name = ik_config["robot_root_name"]
         self.use_ik_match_table1 = ik_config["use_ik_match_table1"]
         self.use_ik_match_table2 = ik_config["use_ik_match_table2"]
-        self.human_scale_table = ik_config["human_scale_table"]
+        self.human_scale_table = {
+            k: v for k, v in ik_config["human_scale_table"].items()
+            if not k.startswith("_") and isinstance(v, (int, float))
+        }
         self.ground = ik_config["ground_height"] * np.array([0, 0, 1])
         # low-priority regularizer pulling redundant joints toward the rest
         # pose; prevents null-space wind-up in kinematically redundant limbs
@@ -419,6 +424,8 @@ class GeneralMotionRetargeting:
 
         # chain-scaled bodies: human direction, robot segment length
         for body_name, spec in self.chain_scale_table.items():
+            if body_name.startswith("_") or not isinstance(spec, dict):
+                continue  # skip comments / non-entry keys
             parent = spec["parent"]
             seg = np.asarray(human_data[body_name][0]) - np.asarray(human_data[parent][0])
             norm = np.linalg.norm(seg)

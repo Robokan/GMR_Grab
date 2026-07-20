@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--bvh_file", type=str, default=None, help="Single SOMA BVH file to play.")
     parser.add_argument("--bvh_dir", type=str, default=None, help="Directory of SOMA BVH files (searched recursively, each played once).")
-    parser.add_argument("--robot", choices=["atlas", "atlas_fists"], default="atlas")
+    parser.add_argument("--robot", choices=["atlas", "atlas_fists", "t800", "t800_transparent"], default="atlas")
     parser.add_argument("--tgt_fps", type=int, default=30, help="Playback/retarget fps (source clips are subsampled).")
     parser.add_argument("--shuffle", action="store_true", default=False, help="Shuffle directory playback order.")
     parser.add_argument("--loop", action="store_true", default=False, help="Loop a single file forever.")
