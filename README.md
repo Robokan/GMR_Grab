@@ -163,6 +163,7 @@ This repo is licensed under the [MIT License](LICENSE).
 | 7 | Stanford ToddlerBot `stanford_toddy` | TBD | ✅ | ✅ | TBD | TBD |
 | 8 | Fourier N1 `fourier_n1` | TBD | ✅ | ✅ | TBD | TBD |
 | 9 | ENGINEAI PM01 `engineai_pm01` | TBD | ✅ | ✅ | TBD | TBD |
+| 9b | ENGINEAI T800 `t800` | Leg (2\*6) + Waist (1) + Arm (2\*5) + Head (2) = 25 | ✅ | TBD | TBD | TBD |
 | 10 | HighTorque Hi `hightorque_hi` | Head (2) + Arm (2\*5) + Waist (1) + Leg (2\*6) = 25 | ✅ | TBD | TBD | TBD |
 | 11 | Galaxea R1 Pro `galaxea_r1pro` (this is a wheeled robot!) |  Base (6) + Torso (4) + Arm (2*7) = 24 | ✅ | TBD | TBD | TBD |
 | 12 | Kuavo `kuavo_s45` |  Head (2) + Arm (2\*7) + Leg (2\*6) = 28 | ✅ | TBD | TBD | TBD |
@@ -582,7 +583,8 @@ The original robot models can be found at the following locations:
 * [Berkley Humanoid Lite](https://github.com/HybridRobotics/Berkeley-Humanoid-Lite-Assets): CC-BY-SA-4.0 license
 * [Booster K1](https://www.boosterobotics.com/)
 * [Booster T1](https://booster.feishu.cn/wiki/UvowwBes1iNvvUkoeeVc3p5wnUg) ([English](https://booster.feishu.cn/wiki/DtFgwVXYxiBT8BksUPjcOwG4n4f))
-* [EngineAI PM01](https://github.com/engineai-robotics/engineai_ros2_workspace): [Link to file](https://github.com/engineai-robotics/engineai_ros2_workspace/blob/community/src/simulation/mujoco/assets/resource) 
+* [EngineAI PM01](https://github.com/engineai-robotics/engineai_ros2_workspace): [Link to file](https://github.com/engineai-robotics/engineai_ros2_workspace/blob/community/src/simulation/mujoco/assets/resource)
+* [EngineAI T800](https://github.com/robofighter/engineAI-studio-pro): MuJoCo floating-base model + SMPL-X IK config from `web-version/gmr/assets/t800` 
 * [Fourier N1](https://github.com/FFTAI/Wiki-GRx-Gym): [Link to file](https://github.com/FFTAI/Wiki-GRx-Gym/tree/FourierN1/legged_gym/resources/robots/N1)
 * [Galaxea R1 Pro](https://galaxea-dynamics.com/): MIT license
 * [HighToqure Hi](https://www.hightorquerobotics.com/hi/)
