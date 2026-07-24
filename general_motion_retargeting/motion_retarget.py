@@ -90,8 +90,16 @@ class GeneralMotionRetargeting:
         }
         self.ground = ik_config["ground_height"] * np.array([0, 0, 1])
         # low-priority regularizer pulling redundant joints toward the rest
-        # pose; prevents null-space wind-up in kinematically redundant limbs
+        # pose; prevents null-space wind-up in kinematically redundant limbs.
+        # Scalar, or a dict of {"default": w, "<joint name>": w, ...} for
+        # per-joint costs (e.g. pinning branch-flip-prone shoulder joints).
         self.posture_weight = ik_config.get("posture_weight", 0.0)
+        self.posture_weight_overrides = {}
+        if isinstance(self.posture_weight, dict):
+            self.posture_weight_overrides = {
+                k: v for k, v in self.posture_weight.items() if k != "default"
+            }
+            self.posture_weight = self.posture_weight.get("default", 0.0)
         # chain-scaled bodies: keep the human segment *direction* but impose
         # the robot's segment *length*, so limb targets stay exactly reachable
         # regardless of human/robot proportion mismatch (entries are ordered
@@ -222,8 +230,17 @@ class GeneralMotionRetargeting:
                 self.tasks2.append(task)
                 self.task_errors2[task] = []
 
-        if self.posture_weight > 0:
+        if self.posture_weight > 0 or self.posture_weight_overrides:
             posture_task = mink.PostureTask(self.model, cost=self.posture_weight)
+            if self.posture_weight_overrides:
+                cost = np.full(self.model.nv, self.posture_weight)
+                for joint_name, w in self.posture_weight_overrides.items():
+                    jid = mj.mj_name2id(
+                        self.model, mj.mjtObj.mjOBJ_JOINT, joint_name
+                    )
+                    assert jid >= 0, f"posture_weight override: no joint {joint_name}"
+                    cost[self.model.jnt_dofadr[jid]] = w
+                posture_task.set_cost(cost)
             posture_task.set_target(self.model.qpos0)
             self.tasks1.append(posture_task)
             self.tasks2.append(posture_task)

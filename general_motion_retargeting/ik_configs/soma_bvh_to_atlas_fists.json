@@ -514,7 +514,11 @@
    ]
   ]
  },
- "posture_weight": 0.5,
+ "posture_weight": {
+  "default": 0.5,
+  "Arm_3_R_Joint": 2.0,
+  "Arm_3_L_Joint": 2.0
+ },
  "human_chain_scale_table": {
   "Chest": {
    "parent": "Hips",

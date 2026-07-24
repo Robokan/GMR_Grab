@@ -39,6 +39,14 @@ def main():
         action="store_true",
         help="overwrite existing .npz outputs (default: skip if present)",
     )
+    p.add_argument(
+        "--smooth_legs_hz",
+        type=float,
+        default=0.0,
+        help="zero-phase low-pass cutoff (Hz) applied to leg/ankle DOF tracks; "
+        "0 disables. Kills mocap-source foot jitter (Reallusion clips buzz at "
+        "~10Hz when standing) while kick transients (~2-4Hz) pass through.",
+    )
     args = p.parse_args()
 
     if args.bvh_file:
@@ -93,6 +101,18 @@ def main():
         # Unwrap hinges over time so ±π IK flips don't become limb teleports.
         for j in range(dof_pos.shape[1]):
             dof_pos[:, j] = np.unwrap(dof_pos[:, j])
+        if args.smooth_legs_hz > 0 and len(dof_pos) > 12:
+            from scipy.signal import butter, filtfilt
+
+            leg_terms = ("leg_", "ankle", "foot", "hip_", "knee")
+            leg_cols = [
+                i - 6  # free joint occupies dofs 0-5; dof_pos starts at qpos[7:]
+                for name, i in retarget.robot_dof_names.items()
+                if name and any(t in name.lower() for t in leg_terms)
+            ]
+            b, a = butter(2, args.smooth_legs_hz / (fps / 2), btype="low")
+            for j in leg_cols:
+                dof_pos[:, j] = filtfilt(b, a, dof_pos[:, j])
         np.savez(
             out,
             fps=fps,
